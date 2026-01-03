@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>혈액 검사 판정 시스템</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        text-align: center;
+        margin: 20px;
+      }
+      select,
+      input {
+        padding: 5px;
+        margin: 10px;
+      }
+      table {
+        width: 95%;
+        margin: 20px auto;
+        border-collapse: collapse;
+      }
+      th,
+      td {
+        border: 1px solid #ddd;
+        padding: 8px;
+        text-align: center;
+      }
+      th {
+        background-color: #f4f4f4;
+        cursor: pointer;
+      }
+      .normal {
+        color: green;
+        font-weight: bold;
+      }
+      .low {
+        color: red;
+        font-weight: bold;
+      }
+      .high {
+        color: orange;
+        font-weight: bold;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>혈액 검사 판정 시스템</h2>
+
+    <label for="typeSelect">검사 유형 선택:</label>
+    <select id="typeSelect" onchange="filterTests()">
+      <option value="all">전체</option>
+      <option value="혈액학">혈액학</option>
+      <option value="신장">신장</option>
+      <option value="간">간</option>
+      <option value="전해질">전해질</option>
+      <option value="지질">지질</option>
+      <option value="당뇨">당뇨</option>
+      <option value="호르몬">호르몬</option>
+      <option value="면역학">면역학</option>
+      <option value="기타(췌장/기타 면역,화학검사)">
+        기타(췌장/기타 면역,화학검사)
+      </option>
+    </select>
+
+    <table id="bloodTestTable">
+      <thead>
+        <tr>
+          <th onclick="sortTable(0)">검사 항목</th>
+          <th onclick="sortTable(1)">정상 범위</th>
+          <th onclick="sortTable(2)">입력값</th>
+          <th onclick="sortTable(3)">판정</th>
+          <th>위험 요인</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <script>
+      const bloodTests = [
+        // 혈액학 항목
+        {
+          type: "혈액학",
+          name: "RBC",
+          min: 4.7,
+          max: 6.1,
+          unit: "백만/µL",
+          highRisk: "탈수 가능, 진성 적혈구증가증(골수식성 질환)가능",
+          lowRisk: "빈혈 위험(철결핍성,엽산,B12결핍성, 만성질환, 출혈,용혈 등)",
+        },
+        {
+          type: "혈액학",
+          name: "Hemoglobin",
+          min: 13.8,
+          max: 17.2,
+          unit: "g/dL",
+          highRisk:
+            "혈액 농축 가능/탈수,고산증/만성 폐질환, 심장질환에 따른 보상성 증가",
+          lowRisk:
+            "빈혈 위험(철결핍성,엽산,B12결핍성등)/신장질환(에리트로포이에틴 감소)",
+        },
+        {
+          type: "혈액학",
+          name: "Hematocrit",
+          min: 38.3,
+          max: 48.6,
+          unit: "%",
+          highRisk: "탈수로 혈장량 감소,적혈구 증가증",
+          lowRisk: "빈혈 위험, 과다출혈, 수분과다(임신, 수액 과다투여 등)",
+        },
+        {
+          type: "혈액학",
+          name: "MCV(평균적혈구 용적))",
+          min: 80,
+          max: 100,
+          unit: "fL",
+          highRisk: "거대적혈모구 빈혈 가능/알코올중독,간질환 등과 연관",
+          lowRisk: "철 결핍성 빈혈, 만성질환에 의한 빈혈 가능",
+        },
+        {
+          type: "혈액학",
+          name: "MCH(적혈구 하나당 hg양)",
+          min: 27,
+          max: 33,
+          unit: "pg",
+          highRisk:
+            "거대적혈모구 빈혈(B12,엽산 결핍 등)/알코올중독,간질환 등과 연관 가능",
+          lowRisk: "철 결핍성 빈혈 가능,알코올 중독,간질환 등과 연관",
+        },
+        {
+          type: "혈액학",
+          name: "MCHC(평균 적혈구 hg농도)",
+          min: 32,
+          max: 36,
+          unit: "g/dL",
+          highRisk: "구형적혈구증 가능, 탈수 등으로 농축된 경우",
+          lowRisk: "철 결핍성 빈혈(저색소성)) 가능",
+        },
+        {
+          type: "혈액학",
+          name: "RDW(적혈구 분포 폭)",
+          min: 11.5,
+          max: 14.5,
+          unit: "%",
+          highRisk: "적혈구 생성 장애 가능",
+          lowRisk: "정상 범위",
+        },
+        {
+          type: "혈액학",
+          name: "WBC",
+          min: 4.0,
+          max: 10.0,
+          unit: "천/µL",
+          highRisk:
+            "감염, 염증성 질환 가능/백혈병 등 혈액암/스트레스,흡연,스테로이드 복용 등",
+          lowRisk:
+            "면역기능 저하/만성 감염, 자가면역질환,골수기능 저하/바이러스 감염/약물(항암제 등) 영향",
+        },
+        {
+          type: "혈액학",
+          name: "Neutrophils(백혈구분핵-호중구)",
+          min: 40,
+          max: 70,
+          unit: "%",
+          highRisk: "세균감염 가능",
+          lowRisk: "감염 저항력 감소",
+        },
+        {
+          type: "혈액학",
+          name: "Lymphocytes(백혈구분핵-림프구)",
+          min: 20,
+          max: 40,
+          unit: "%",
+          highRisk: "바이러스 감염 가능",
+          lowRisk: "면역력 저하 가능",
+        },
+        {
+          type: "혈액학",
+          name: "Monocytes(백혈구분핵-단핵구)",
+          min: 2,
+          max: 8,
+          unit: "%",
+          highRisk: "만성염증 가능",
+          lowRisk: "면역기능 약화",
+        },
+        {
+          type: "혈액학",
+          name: "Eosinophils(백혈구분핵-호산구)",
+          min: 0,
+          max: 5,
+          unit: "%",
+          highRisk: "알레르기 반응 가능",
+          lowRisk: "정상 범위",
+        },
+        {
+          type: "혈액학",
+          name: "Basophils(백혈구분핵-호염기구)",
+          min: 0,
+          max: 1,
+          unit: "%",
+          highRisk: "알레르기 가능",
+          lowRisk: "정상 범위",
+        },
+        {
+          type: "혈액학",
+          name: "Platelets(혈소판))",
+          min: 150,
+          max: 450,
+          unit: "천/µL",
+          highRisk:
+            "혈전 생성 가능/염증성 질환, 감염,골수증식성 질환(진성 적혈구증가증 등)",
+          lowRisk:
+            "출혈 가능/재생불량성 빈혈,백혈병 등 골수문제/간질환,약물 영향 등",
+        },
+        {
+          type: "혈액학",
+          name: "MPV(Mean Platelet Volume)",
+          min: 7.5,
+          max: 11.5,
+          unit: "fL",
+          highRisk:
+            "혈전 가능성 증가/골수에서 큰 혈소판 생성/혈소판 파괴 후 보상적 생성",
+          lowRisk:
+            "혈소판 기능 저하/작은 혈소판 우새/일부 유전성 질환(와플 증후군 등)",
+        },
+        {
+          type: "혈액학",
+          name: "ESR",
+          min: 0,
+          max: 20,
+          unit: "mm/hr",
+          highRisk: "염증 가능",
+          lowRisk: "정상 범위",
+        },
+        {
+          type: "혈액학",
+          name: "Reticulocyte",
+          min: 0.5,
+          max: 1.5,
+          unit: "%",
+          highRisk: "적혈구 생성 증가",
+          lowRisk: "적혈구 생성 감소",
+        },
+
+        // 신장 항목
+        {
+          type: "신장",
+          name: "BUN",
+          min: 7,
+          max: 20,
+          unit: "mg/dL",
+          highRisk: "신장 질환, 심부전, 탈수, 고단백 식사",
+          lowRisk: "영양 부족, 간 질환, 과도한 수분 섭취",
+        },
+        {
+          type: "신장",
+          name: "Creatinine",
+          min: 0.6,
+          max: 1.3,
+          unit: "mg/dL",
+          highRisk: "신장 기능 저하, 근육 손상, 탈수",
+          lowRisk: "근육량 부족, 영양 결핍",
+        },
+        {
+          type: "신장",
+          name: "BUN/Creatinine Ratio",
+          min: 10,
+          max: 20,
+          unit: "",
+          highRisk:
+            "신장 기능 저하, 심부전, 탈수, 위장관 출혈, 고단백 식사, 신장 동맥 협착, 쇼크 상태",
+          lowRisk:
+            "영양 부족, 간 질환, 근육량 감소, 과도한 수분 섭취, 중증 근무력증, 임신",
+        },
+        {
+          type: "신장",
+          name: "GFR",
+          min: 90,
+          max: 120,
+          unit: "mL/min/1.73m²",
+          highRisk: "신장 기능 저하, 신부전",
+          lowRisk: "신장 질환, 노화",
+        },
+        {
+          type: "신장",
+          name: "Uric Acid",
+          min: 3.4,
+          max: 7.0,
+          unit: "mg/dL",
+          highRisk: "통풍, 신장 결석, 대사 증후군",
+          lowRisk: "정상 범위",
+        },
+        {
+          type: "신장",
+          name: "Cystatin C",
+          min: 0.5,
+          max: 1.0,
+          unit: "mg/L",
+          highRisk: "신장 기능 저하, 심혈관 질환 위험",
+          lowRisk: "정상 범위",
+        },
+        {
+          type: "신장",
+          name: "Blood Urea",
+          min: 15,
+          max: 40,
+          unit: "mg/dL",
+          highRisk: "신부전, 탈수, 고단백 식사",
+          lowRisk: "정상 범위",
+        },
+
+        // 간 항목
+        {
+          type: "간",
+          name: "ALT(GPT)",
+          min: 7,
+          max: 56,
+          unit: "U/L",
+          highRisk: "간염 가능",
+          lowRisk: "정상 범위",
+        },
+        {
+          type: "간",
+          name: "AST(GOT)",
+          min: 10,
+          max: 40,
+          unit: "U/L",
+          highRisk: "간질환 가능",
+          lowRisk: "정상 범위",
+        },
+        {
+          type: "간",
+          name: "ALP",
+          min: 44,
+          max: 147,
+          unit: "U/L",
+          highRisk: "간 질환 가능",
+          lowRisk: "골다공증 가능",
+        },
+        {
+          type: "간",
+          name: "GGT(감마-글루타밀 전이효소)",
+          min: 9,
+          max: 48,
+          unit: "U/L",
+          highRisk:
+            "지방간으로 인한 상승/알콜성 간질환(간경화/간암 등)/췌장염 가능-> 초음파/섬유화 검사 필요",
+          lowRisk: "정상 범위",
+        },
+        {
+          type: "간",
+          name: "Bilirubin Total",
+          min: 0.1,
+          max: 1.2,
+          unit: "mg/dL",
+          highRisk: "간질환 가능",
+          lowRisk: "정상 범위",
+        },
+        {
+          type: "간",
+          name: "Albumin",
+          min: 3.5,
+          max: 5.0,
+          unit: "g/dL",
+          highRisk: "탈수 가능/소변량 감소, 색이 진함",
+          lowRisk: "간 질환 가능(복수 참)/부종(특히 다리, 발목)/근육약화",
+        },
+        {
+          type: "간",
+          name: "Total Protein",
+          min: 6.0,
+          max: 8.3,
+          unit: "g/dL",
+          highRisk: "탈수, 다발성 골수종(면역글로불린 증가), 만성 염증",
+          lowRisk: "영양 부족 가능/간질환,신장질환(단백 소실),갑상선기능항진증",
+        },
+        {
+          type: "간",
+          name: "Direct Bilirubin",
+          min: 0.0,
+          max: 0.3,
+          unit: "mg/dL",
+          highRisk: "간 담도 질환",
+          lowRisk: "정상 범위",
+        },
+        {
+          type: "간",
+          name: "Indirect Bilirubin",
+          min: 0.1,
+          max: 1.0,
+          unit: "mg/dL",
+          highRisk: "용혈성 빈혈",
+          lowRisk: "정상 범위",
+        },
+        {
+          type: "간",
+          name: "LDH",
+          min: 140,
+          max: 280,
+          unit: "U/L",
+          highRisk: "조직 손상(심근경색, 간질환)",
+          lowRisk: "정상 범위",
+        },
+
+        // 전해질 항목
+        {
+          type: "전해질",
+          name: "Sodium",
+          min: 135,
+          max: 145,
+          unit: "mEq/L",
+          highRisk: "고혈압 위험",
+          lowRisk: "탈수 가능",
+        },
+        {
+          type: "전해질",
+          name: "Potassium",
+          min: 3.5,
+          max: 5.1,
+          unit: "mEq/L",
+          highRisk: "심장 부정맥 가능",
+          lowRisk: "근육 약화 가능",
+        },
+        {
+          type: "전해질",
+          name: "Chloride",
+          min: 96,
+          max: 106,
+          unit: "mEq/L",
+          highRisk: "호흡기 질환 가능",
+          lowRisk: "탈수 가능",
+        },
+        {
+          type: "전해질",
+          name: "Calcium",
+          min: 8.5,
+          max: 10.5,
+          unit: "mg/dL",
+          highRisk: "고칼슘혈증 가능",
+          lowRisk: "저칼슘혈증 가능",
+        },
+        {
+          type: "전해질",
+          name: "Phosphorus",
+          min: 2.5,
+          max: 4.5,
+          unit: "mg/dL",
+          highRisk: "신장 질환 가능",
+          lowRisk: "골다공증 가능",
+        },
+        {
+          type: "전해질",
+          name: "Magnesium",
+          min: 1.7,
+          max: 2.2,
+          unit: "mg/dL",
+          highRisk: "신장 질환 가능",
+          lowRisk: "심장 질환 가능",
+        },
+        {
+          type: "전해질",
+          name: "Bicarbonate",
+          min: 22,
+          max: 29,
+          unit: "mEq/L",
+          highRisk: "호흡기 질환",
+          lowRisk: "대사성 산증",
+        },
+
+        // 지질 항목
+        {
+          type: "지질",
+          name: "Total Cholesterol",
+          min: 150,
+          max: 200,
+          unit: "mg/dL",
+          highRisk: "고지혈증 가능",
+          lowRisk: "정상 범위",
+        },
+        {
+          type: "지질",
+          name: "LDL Cholesterol",
+          min: 50,
+          max: 100,
+          unit: "mg/dL",
+          highRisk: "동맥경화/고지혈증 가능",
+          lowRisk: "정상 범위",
+        },
+        {
+          type: "지질",
+          name: "HDL Cholesterol",
+          min: 40,
+          max: 60,
+          unit: "mg/dL",
+          highRisk: "높을수록 심혈관질환 보호 효과; 위험요인 해당 없음",
+          lowRisk: "정상 범위",
+        },
+        {
+          type: "지질",
+          name: "Triglycerides",
+          min: 50,
+          max: 150,
+          unit: "mg/dL",
+          highRisk: "심장 질환 가능",
+          lowRisk: "정상 범위",
+        },
+        {
+          type: "지질",
+          name: "VLDL",
+          min: 5,
+          max: 40,
+          unit: "mg/dL",
+          highRisk: "심장 질환 가능",
+          lowRisk: "정상 범위",
+        },
+
+        // 당뇨 항목
+        {
+          type: "당뇨",
+          name: "Fasting Blood Sugar",
+          min: 70,
+          max: 100,
+          unit: "mg/dL",
+          highRisk: "고혈당: 당뇨병 또는 내당능장애 위험",
+          lowRisk: "저혈당: 인슐린과다분비; 부신기능저하 (현기증; 혼수 위험)",
+        },
+        {
+          type: "당뇨",
+          name: "HbA1c",
+          min: 4.0,
+          max: 5.6,
+          unit: "%",
+          highRisk: "당뇨병 가능",
+          lowRisk: "정상 범위",
+        },
+        {
+          type: "당뇨",
+          name: "Insulin",
+          min: 2.6,
+          max: 24.9,
+          unit: "μU/mL",
+          highRisk: "인슐린 저항성 가능",
+          lowRisk: "저혈당 가능",
+        },
+
+        // 호르몬 항목
+        {
+          type: "호르몬",
+          name: "TSH(갑상선자극호르몬)",
+          min: 0.4,
+          max: 4.0,
+          unit: "μIU/mL",
+          highRisk: "갑상선 기능 저하 가능",
+          lowRisk: "갑상선기능항진증 또는 뇌하수체 기능저하 위험",
+        },
+        {
+          type: "호르몬",
+          name: "Free T4",
+          min: 0.8,
+          max: 1.8,
+          unit: "ng/dL",
+          highRisk: "갑상선 기능 항진 가능",
+          lowRisk: "갑상선 기능 저하 가능",
+        },
+        {
+          type: "호르몬",
+          name: "Cortisol",
+          min: 5,
+          max: 25,
+          unit: "μg/dL",
+          highRisk: "쿠싱 증후군 가능",
+          lowRisk: "애디슨병 가능",
+        },
+
+        // 면역학 항목
+        {
+          type: "면역학",
+          name: "IgG",
+          min: 700,
+          max: 1600,
+          unit: "mg/dL",
+          highRisk: "만성 염증 가능",
+          lowRisk: "면역 결핍 가능",
+        },
+        {
+          type: "면역학",
+          name: "IgA",
+          min: 70,
+          max: 400,
+          unit: "mg/dL",
+          highRisk: "자가면역 질환 가능",
+          lowRisk: "면역 결핍 가능",
+        },
+        {
+          type: "면역학",
+          name: "IgM",
+          min: 40,
+          max: 230,
+          unit: "mg/dL",
+          highRisk: "급성 감염 가능",
+          lowRisk: "면역 결핍 가능",
+        },
+
+        // 기타 항목 (철분 관련 항목 추가)
+        {
+          type: "기타(췌장/기타 면역,화학검사)",
+          name: "Vitamin D",
+          min: 30,
+          max: 100,
+          unit: "ng/mL",
+          highRisk: "과다 섭취 위험",
+          lowRisk: "골다공증 가능",
+        },
+        {
+          type: "기타(췌장/기타 면역,화학검사)",
+          name: "Folate(엽산)",
+          min: 3.1,
+          max: 17.5,
+          unit: "ng/mL",
+          highRisk: "일반적으로 무해",
+          lowRisk: "빈혈, 신경관 결손",
+        },
+        {
+          type: "기타(췌장/기타 면역,화학검사)",
+          name: "Vitamin B12",
+          min: 200,
+          max: 900,
+          unit: "pg/mL",
+          highRisk: "간질환, 백혈병",
+          lowRisk: "빈혈, 신경 손상",
+        },
+        {
+          type: "기타(췌장/기타 면역,화학검사)",
+          name: "Homocysteine",
+          min: 5,
+          max: 15,
+          unit: "μmol/L",
+          highRisk: "심혈관 질환 위험",
+          lowRisk: "정상 범위",
+        },
+        {
+          type: "기타(췌장/기타 면역,화학검사)",
+          name: "Amylase",
+          min: 25,
+          max: 125,
+          unit: "U/L",
+          highRisk: "급성 췌장염, 췌장암",
+          lowRisk: "췌장 기능 저하, 만성 췌장염",
+        },
+        {
+          type: "기타(췌장/기타 면역,화학검사)",
+          name: "Lipase",
+          min: 13,
+          max: 60,
+          unit: "U/L",
+          highRisk: "급성 췌장염, 췌장암",
+          lowRisk: "췌장 기능 저하",
+        },
+        {
+          type: "기타(췌장/기타 면역,화학검사)",
+          name: "LDH",
+          min: 140,
+          max: 280,
+          unit: "U/L",
+          highRisk: "조직 손상(심근경색, 간질환)",
+          lowRisk: "정상 범위",
+        },
+        {
+          type: "기타(췌장/기타 면역,화학검사)",
+          name: "CK",
+          min: 38,
+          max: 174,
+          unit: "U/L",
+          highRisk: "근육 손상(심근경색, 횡문근융해증)",
+          lowRisk: "정상 범위",
+        },
+        // 철분 관련 항목 추가
+        {
+          type: "기타(췌장/기타 면역,화학검사)",
+          name: "Ferritin (남성)",
+          min: 24,
+          max: 336,
+          unit: "µg/L",
+          highRisk:
+            "Hemochromatosis, 간 질환, 염증성 질환, 악성 질환, 갑상샘기능항진증 - 장기 손상 및 사망률 증가 위험",
+          lowRisk:
+            "철 결핍성 빈혈, 임신 및 수유, 만성 출혈 또는 영양 결핍 - 피로, 어지럼증, 두통 등 빈혈 증상 및 면역력 저하",
+        },
+        {
+          type: "기타(췌장/기타 면역,화학검사)",
+          name: "Ferritin (여성)",
+          min: 11,
+          max: 307,
+          unit: "µg/L",
+          highRisk:
+            "Hemochromatosis, 간 질환, 염증성 질환, 악성 질환, 갑상샘기능항진증 - 장기 손상 및 사망률 증가 위험",
+          lowRisk:
+            "철 결핍성 빈혈, 임신 및 수유, 만성 출혈 또는 영양 결핍 - 피로, 어지럼증, 두통 등 빈혈 증상 및 면역력 저하",
+        },
+        {
+          type: "기타(췌장/기타 면역,화학검사)",
+          name: "Iron",
+          min: 50,
+          max: 160,
+          unit: "µg/dL",
+          highRisk: "철 과잉 상태, 간 질환, 급성 염증 - 장기 손상 위험",
+          lowRisk:
+            "철 결핍성 빈혈, 만성 질환, 영양 결핍 - 피로, 어지럼증, 두통, 면역력 저하",
+        },
+        {
+          type: "기타(췌장/기타 면역,화학검사)",
+          name: "TIBC",
+          min: 250,
+          max: 450,
+          unit: "µg/dL",
+          highRisk:
+            "철 결핍성 빈혈, 임신, 급성 염증 - 철 결합 능력 증가로 인한 철 결핍 증상/장기적인 철 결핍은 심혈관 건강에 악영향",
+          lowRisk:
+            "철 과잉 상태, 간 질환, 영양 과잉(간 손상, 당뇨병, 심부전 위험 증가)",
+        },
+        {
+          type: "기타(췌장/기타 면역,화학검사)",
+          name: "Transferrin",
+          min: 200,
+          max: 360,
+          unit: "mg/dL",
+          highRisk:
+            "철 결핍성 빈혈, 임신, 급성 염증 - 철 운반 단백질 증가로 인한 철 결핍 증상",
+          lowRisk:
+            "철 과잉으로 인한 산화 스트레스 및 장기 손상/염증 반응 악화: CRP 및 IL-6 상승과 연관",
+        },
+      ];
+
+      function filterTests() {
+        const type = document.getElementById("typeSelect").value;
+        const tableBody = document.querySelector("#bloodTestTable tbody");
+        tableBody.innerHTML = "";
+
+        const filteredTests = bloodTests.filter(
+          (test) => type === "all" || test.type === type
+        );
+        filteredTests.forEach((test) => {
+          const row = document.createElement("tr");
+
+          row.innerHTML = `
+            <td>${test.name}</td>
+            <td>${test.min} - ${test.max} ${test.unit}</td>
+            <td><input type="number" class="input-value" data-name="${test.name}" step="0.1" min="0"></td>
+            <td></td>
+            <td></td>
+          `;
+          tableBody.appendChild(row);
+        });
+
+        document.querySelectorAll(".input-value").forEach((input) => {
+          input.addEventListener("input", function () {
+            const name = this.getAttribute("data-name");
+            const value = parseFloat(this.value);
+            const test = bloodTests.find((t) => t.name === name);
+            let judgment = "";
+            let riskFactor = "";
+
+            if (isNaN(value)) {
+              judgment = "";
+              riskFactor = "";
+            } else if (value < test.min) {
+              judgment = `<span class="low">수치 낮음</span>`;
+              riskFactor = test.lowRisk;
+            } else if (value > test.max) {
+              judgment = `<span class="high">수치 높음</span>`;
+              riskFactor = test.highRisk;
+            } else {
+              judgment = `<span class="normal">정상</span>`;
+              riskFactor = "";
+            }
+
+            this.parentElement.nextElementSibling.innerHTML = judgment;
+            this.parentElement.nextElementSibling.nextElementSibling.innerHTML =
+              riskFactor;
+          });
+        });
+      }
+
+      function sortTable(index) {
+        const rows = Array.from(
+          document.querySelector("#bloodTestTable tbody").rows
+        );
+        const sortedRows = rows.sort((rowA, rowB) => {
+          const cellA = rowA.cells[index].innerText;
+          const cellB = rowB.cells[index].innerText;
+          return cellA.localeCompare(cellB, "ko");
+        });
+
+        const tableBody = document.querySelector("#bloodTestTable tbody");
+        sortedRows.forEach((row) => tableBody.appendChild(row));
+      }
+
+      window.onload = filterTests;
+    </script>
+  </body>
+</html>
