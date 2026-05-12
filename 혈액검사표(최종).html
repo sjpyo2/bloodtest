@@ -1,801 +1,4528 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ko">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>혈액 검사 판정 시스템</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <title>혈액검사 통합관리 시스템</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=DM+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
     <style>
+      :root {
+        --bg: #0d1117;
+        --bg2: #161b22;
+        --bg3: #1c2128;
+        --bg4: #21262d;
+        --bdr: #30363d;
+        --bdr2: #444c56;
+        --text: #e6edf3;
+        --sub: #8b949e;
+        --sub2: #6e7681;
+        --red: #f85149;
+        --red-pale: rgba(248, 81, 73, 0.12);
+        --org: #f0883e;
+        --org-pale: rgba(240, 136, 62, 0.12);
+        --grn: #3fb950;
+        --grn-pale: rgba(63, 185, 80, 0.12);
+        --blu: #58a6ff;
+        --blu-pale: rgba(88, 166, 255, 0.12);
+        --yel: #e3b341;
+        --yel-pale: rgba(227, 179, 65, 0.12);
+        --pur: #bc8cff;
+        --pur-pale: rgba(188, 140, 255, 0.12);
+        --cyn: #39d353;
+        --sh: 0 8px 32px rgba(0, 0, 0, 0.4);
+      }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      html {
+        scroll-behavior: smooth;
+      }
       body {
-        font-family: Arial, sans-serif;
-        text-align: center;
-        margin: 20px;
+        font-family: "Noto Sans KR", sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        min-height: 100vh;
+        font-size: 14px;
       }
-      select,
-      input {
-        padding: 5px;
-        margin: 10px;
+
+      /* ── HEADER ── */
+      .hdr {
+        background: var(--bg2);
+        border-bottom: 1px solid var(--bdr);
+        padding: 14px 24px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        position: sticky;
+        top: 0;
+        z-index: 200;
       }
-      table {
-        width: 95%;
-        margin: 20px auto;
+      .hdr-brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .hdr-brand h1 {
+        font-size: 1rem;
+        font-weight: 800;
+        color: var(--text);
+        letter-spacing: -0.5px;
+      }
+      .hdr-brand span {
+        font-size: 0.68rem;
+        color: var(--sub);
+        font-family: "DM Mono", monospace;
+      }
+      .hdr-badge {
+        background: var(--grn-pale);
+        color: var(--grn);
+        border: 1px solid var(--grn);
+        padding: 2px 8px;
+        border-radius: 5px;
+        font-size: 0.65rem;
+        font-weight: 700;
+      }
+      .hdr-btns {
+        display: flex;
+        gap: 6px;
+      }
+      .hbtn {
+        padding: 5px 11px;
+        border-radius: 7px;
+        border: 1px solid var(--bdr);
+        background: var(--bg3);
+        color: var(--sub);
+        font-size: 0.72rem;
+        cursor: pointer;
+        font-family: inherit;
+        transition: 0.15s;
+      }
+      .hbtn:hover {
+        border-color: var(--bdr2);
+        color: var(--text);
+      }
+      .hbtn.danger {
+        border-color: var(--red);
+        color: var(--red);
+      }
+
+      /* ── TABS ── */
+      .tabs {
+        background: var(--bg2);
+        border-bottom: 1px solid var(--bdr);
+        padding: 0 24px;
+        display: flex;
+        overflow-x: auto;
+        gap: 0;
+      }
+      .tabs::-webkit-scrollbar {
+        height: 3px;
+      }
+      .tabs::-webkit-scrollbar-thumb {
+        background: var(--bdr2);
+      }
+      .tb {
+        padding: 12px 16px;
+        cursor: pointer;
+        border: none;
+        background: transparent;
+        color: var(--sub);
+        font-weight: 600;
+        font-size: 0.8rem;
+        font-family: inherit;
+        white-space: nowrap;
+        border-bottom: 2px solid transparent;
+        transition: 0.15s;
+      }
+      .tb.on {
+        color: var(--blu);
+        border-bottom-color: var(--blu);
+      }
+      .tb:hover:not(.on) {
+        color: var(--text);
+        background: var(--bg3);
+      }
+
+      /* ── PAGE ── */
+      .pg {
+        display: none;
+        padding: 24px;
+        max-width: 1300px;
+        margin: 0 auto;
+      }
+      .pg.on {
+        display: block;
+      }
+
+      /* ── CARDS ── */
+      .card {
+        background: var(--bg2);
+        border: 1px solid var(--bdr);
+        border-radius: 12px;
+        padding: 18px;
+        margin-bottom: 16px;
+      }
+      .card-title {
+        font-size: 0.82rem;
+        font-weight: 800;
+        color: var(--sub);
+        text-transform: uppercase;
+        letter-spacing: 0.6px;
+        margin-bottom: 14px;
+        display: flex;
+        align-items: center;
+        gap: 7px;
+      }
+      .card-title::before {
+        content: "";
+        width: 3px;
+        height: 14px;
+        background: var(--blu);
+        border-radius: 2px;
+        display: inline-block;
+      }
+
+      /* ── FORMS ── */
+      .fg {
+        margin-bottom: 10px;
+      }
+      .fg label {
+        display: block;
+        font-size: 0.72rem;
+        font-weight: 700;
+        color: var(--sub);
+        margin-bottom: 4px;
+      }
+      .fg input,
+      .fg select,
+      .fg textarea {
+        width: 100%;
+        padding: 8px 11px;
+        border: 1px solid var(--bdr);
+        border-radius: 8px;
+        font-size: 0.85rem;
+        font-family: inherit;
+        background: var(--bg3);
+        color: var(--text);
+        transition: 0.15s;
+      }
+      .fg input:focus,
+      .fg select:focus,
+      .fg textarea:focus {
+        border-color: var(--blu);
+        background: var(--bg4);
+        outline: none;
+      }
+      .fg textarea {
+        resize: vertical;
+      }
+      .fg select option {
+        background: var(--bg3);
+      }
+      .grid2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+      .grid3 {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 10px;
+      }
+      .grid4 {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 10px;
+      }
+
+      /* ── BUTTONS ── */
+      .btn {
+        padding: 9px 16px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 700;
+        font-size: 0.82rem;
+        font-family: inherit;
+        transition: 0.15s;
+        border: none;
+      }
+      .btn-blu {
+        background: var(--blu);
+        color: #0d1117;
+      }
+      .btn-blu:hover {
+        opacity: 0.88;
+      }
+      .btn-ghost {
+        background: transparent;
+        border: 1px solid var(--bdr);
+        color: var(--sub);
+      }
+      .btn-ghost:hover {
+        border-color: var(--bdr2);
+        color: var(--text);
+      }
+      .btn-red {
+        background: var(--red);
+        color: #fff;
+      }
+      .btn-row {
+        display: flex;
+        gap: 8px;
+        margin-top: 10px;
+      }
+
+      /* ── STAT BADGE ── */
+      .sbadge {
+        padding: 2px 8px;
+        border-radius: 5px;
+        font-size: 0.68rem;
+        font-weight: 700;
+        display: inline-block;
+      }
+      .sbadge.normal {
+        background: var(--grn-pale);
+        color: var(--grn);
+      }
+      .sbadge.high {
+        background: var(--org-pale);
+        color: var(--org);
+      }
+      .sbadge.low {
+        background: var(--red-pale);
+        color: var(--red);
+      }
+      .sbadge.critical {
+        background: var(--red-pale);
+        color: var(--red);
+        animation: blink 1.2s infinite;
+      }
+      @keyframes blink {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.4;
+        }
+      }
+
+      /* ── KPI GRID ── */
+      .kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+        margin-bottom: 18px;
+      }
+      .kpi {
+        background: var(--bg2);
+        border: 1px solid var(--bdr);
+        border-radius: 12px;
+        padding: 16px;
+        position: relative;
+        overflow: hidden;
+        transition: 0.2s;
+      }
+      .kpi:hover {
+        border-color: var(--bdr2);
+      }
+      .kpi::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(
+          135deg,
+          transparent 60%,
+          rgba(255, 255, 255, 0.02)
+        );
+        pointer-events: none;
+      }
+      .kpi-label {
+        font-size: 0.68rem;
+        font-weight: 700;
+        color: var(--sub);
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+        margin-bottom: 6px;
+      }
+      .kpi-val {
+        font-size: 2rem;
+        font-weight: 900;
+        line-height: 1;
+        margin-bottom: 3px;
+        font-family: "DM Mono", monospace;
+      }
+      .kpi-sub {
+        font-size: 0.7rem;
+        color: var(--sub2);
+      }
+      .kpi-ico {
+        position: absolute;
+        right: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 2.2rem;
+        opacity: 0.07;
+      }
+
+      /* ── HEALTH SCORE ── */
+      .health-score-ring {
+        width: 120px;
+        height: 120px;
+        position: relative;
+        margin: 0 auto 12px;
+      }
+      .health-score-ring svg {
+        transform: rotate(-90deg);
+      }
+      .health-score-val {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        font-family: "DM Mono", monospace;
+      }
+      .health-score-num {
+        font-size: 1.8rem;
+        font-weight: 900;
+        line-height: 1;
+      }
+      .health-score-lbl {
+        font-size: 0.6rem;
+        color: var(--sub);
+        margin-top: 2px;
+      }
+
+      /* ── ALERT ITEMS ── */
+      .alert-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 10px 12px;
+        border-radius: 9px;
+        margin-bottom: 8px;
+        border: 1px solid;
+        transition: 0.15s;
+      }
+      .alert-item.crit {
+        background: var(--red-pale);
+        border-color: rgba(248, 81, 73, 0.3);
+      }
+      .alert-item.warn {
+        background: var(--org-pale);
+        border-color: rgba(240, 136, 62, 0.3);
+      }
+      .alert-item.info {
+        background: var(--blu-pale);
+        border-color: rgba(88, 166, 255, 0.3);
+      }
+      .alert-item.good {
+        background: var(--grn-pale);
+        border-color: rgba(63, 185, 80, 0.3);
+      }
+      .alert-ico {
+        font-size: 1rem;
+        margin-top: 1px;
+        flex-shrink: 0;
+      }
+      .alert-name {
+        font-weight: 800;
+        font-size: 0.82rem;
+      }
+      .alert-val {
+        font-size: 0.72rem;
+        color: var(--sub);
+        margin-top: 1px;
+      }
+      .alert-insight {
+        font-size: 0.72rem;
+        color: var(--sub2);
+        margin-top: 3px;
+        line-height: 1.5;
+      }
+
+      /* ── TABLE ── */
+      .tbl-wrap {
+        overflow-x: auto;
+      }
+      .btbl {
+        width: 100%;
         border-collapse: collapse;
+        font-size: 0.82rem;
       }
-      th,
-      td {
-        border: 1px solid #ddd;
-        padding: 8px;
-        text-align: center;
+      .btbl th {
+        background: var(--bg3);
+        padding: 9px 12px;
+        text-align: left;
+        font-size: 0.7rem;
+        font-weight: 700;
+        color: var(--sub);
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+        border-bottom: 1px solid var(--bdr);
+        white-space: nowrap;
       }
-      th {
-        background-color: #f4f4f4;
+      .btbl td {
+        padding: 9px 12px;
+        border-bottom: 1px solid var(--bdr);
+        vertical-align: middle;
+      }
+      .btbl tr:last-child td {
+        border-bottom: none;
+      }
+      .btbl tr:hover td {
+        background: var(--bg3);
+      }
+
+      /* ── INPUT TABLE (검사 입력) ── */
+      .input-row {
+        display: grid;
+        gap: 6px;
+        padding: 8px 0;
+        border-bottom: 1px solid var(--bdr);
+      }
+      .input-row:last-child {
+        border-bottom: none;
+      }
+      .irow-name {
+        font-weight: 700;
+        font-size: 0.82rem;
+        color: var(--text);
+      }
+      .irow-range {
+        font-size: 0.68rem;
+        color: var(--sub);
+        font-family: "DM Mono", monospace;
+      }
+      .irow-input {
+        position: relative;
+      }
+      .irow-input input {
+        padding: 7px 40px 7px 10px;
+        border: 1px solid var(--bdr);
+        border-radius: 7px;
+        background: var(--bg3);
+        color: var(--text);
+        font-family: "DM Mono", monospace;
+        font-size: 0.85rem;
+        width: 100%;
+        transition: 0.15s;
+      }
+      .irow-input input:focus {
+        border-color: var(--blu);
+        background: var(--bg4);
+        outline: none;
+      }
+      .irow-unit {
+        position: absolute;
+        right: 8px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 0.65rem;
+        color: var(--sub2);
+        pointer-events: none;
+      }
+      .irow-status {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+      }
+      .range-bar {
+        height: 4px;
+        background: var(--bg4);
+        border-radius: 2px;
+        position: relative;
+        overflow: visible;
+      }
+      .range-bar-normal {
+        position: absolute;
+        top: 0;
+        height: 100%;
+        background: var(--grn);
+        border-radius: 2px;
+        opacity: 0.3;
+      }
+      .range-bar-dot {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        border: 2px solid var(--bg);
+        transition: 0.3s;
+        z-index: 1;
+      }
+
+      /* ── CHART CARDS ── */
+      .chart-card {
+        background: var(--bg2);
+        border: 1px solid var(--bdr);
+        border-radius: 12px;
+        padding: 16px;
+        margin-bottom: 14px;
+      }
+      .chart-card h3 {
+        font-size: 0.78rem;
+        font-weight: 700;
+        color: var(--sub);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+        gap: 7px;
+      }
+      .chart-box {
+        position: relative;
+      }
+      .chart-box canvas {
+        width: 100% !important;
+      }
+
+      /* ── INSIGHT CARDS ── */
+      .insight-card {
+        background: var(--bg2);
+        border: 1px solid var(--bdr);
+        border-radius: 12px;
+        padding: 14px;
+        margin-bottom: 10px;
+      }
+      .insight-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 8px;
+      }
+      .insight-badge {
+        padding: 2px 8px;
+        border-radius: 5px;
+        font-size: 0.65rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+      }
+      .insight-badge.critical {
+        background: var(--red-pale);
+        color: var(--red);
+      }
+      .insight-badge.warning {
+        background: var(--org-pale);
+        color: var(--org);
+      }
+      .insight-badge.normal {
+        background: var(--grn-pale);
+        color: var(--grn);
+      }
+      .insight-badge.improving {
+        background: var(--blu-pale);
+        color: var(--blu);
+      }
+      .insight-title {
+        font-weight: 800;
+        font-size: 0.88rem;
+      }
+      .insight-body {
+        font-size: 0.8rem;
+        color: var(--sub);
+        line-height: 1.7;
+        margin-bottom: 8px;
+      }
+      .insight-markers {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+        margin-top: 6px;
+      }
+      .im {
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-size: 0.68rem;
+        font-weight: 700;
+        background: var(--bg3);
+        color: var(--sub);
+        border: 1px solid var(--bdr);
+      }
+      .im.abn {
+        background: var(--red-pale);
+        color: var(--red);
+        border-color: rgba(248, 81, 73, 0.3);
+      }
+
+      /* ── STRATEGY CARDS ── */
+      .strat-card {
+        background: var(--bg2);
+        border: 1px solid var(--bdr);
+        border-radius: 12px;
+        padding: 16px;
+        margin-bottom: 12px;
+      }
+      .strat-hdr {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 10px;
         cursor: pointer;
       }
-      .normal {
-        color: green;
-        font-weight: bold;
+      .strat-title {
+        font-weight: 800;
+        font-size: 0.9rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
       }
-      .low {
-        color: red;
-        font-weight: bold;
+      .strat-toggle {
+        color: var(--sub);
+        font-size: 0.8rem;
       }
-      .high {
-        color: orange;
-        font-weight: bold;
+      .strat-body {
+        font-size: 0.8rem;
+        color: var(--sub);
+        line-height: 1.8;
+      }
+      .strat-section {
+        margin-top: 10px;
+      }
+      .strat-section-title {
+        font-size: 0.72rem;
+        font-weight: 800;
+        color: var(--sub);
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+        margin-bottom: 6px;
+        border-bottom: 1px solid var(--bdr);
+        padding-bottom: 5px;
+      }
+      .food-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 6px;
+        margin-top: 6px;
+      }
+      .food-good {
+        background: var(--grn-pale);
+        border: 1px solid rgba(63, 185, 80, 0.2);
+        padding: 6px 9px;
+        border-radius: 7px;
+        font-size: 0.75rem;
+      }
+      .food-bad {
+        background: var(--red-pale);
+        border: 1px solid rgba(248, 81, 73, 0.2);
+        padding: 6px 9px;
+        border-radius: 7px;
+        font-size: 0.75rem;
+      }
+      .food-item-title {
+        font-weight: 700;
+        margin-bottom: 2px;
+      }
+      .food-item-desc {
+        font-size: 0.68rem;
+        color: var(--sub2);
+      }
+
+      /* ── TREND ARROWS ── */
+      .trend-up {
+        color: var(--org);
+      }
+      .trend-dn {
+        color: var(--blu);
+      }
+      .trend-ok {
+        color: var(--grn);
+      }
+      .trend-crit-up {
+        color: var(--red);
+      }
+      .trend-crit-dn {
+        color: var(--red);
+      }
+
+      /* ── CORRELATION MAP ── */
+      .corr-network {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 12px;
+      }
+      .corr-item {
+        background: var(--bg3);
+        border: 1px solid var(--bdr);
+        border-radius: 10px;
+        padding: 12px;
+      }
+      .corr-nodes {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 7px;
+        flex-wrap: wrap;
+      }
+      .corr-node {
+        padding: 3px 9px;
+        border-radius: 5px;
+        font-size: 0.72rem;
+        font-weight: 700;
+        background: var(--bg4);
+        border: 1px solid var(--bdr);
+      }
+      .corr-node.abn {
+        background: var(--red-pale);
+        color: var(--red);
+        border-color: rgba(248, 81, 73, 0.3);
+      }
+      .corr-arrow {
+        color: var(--sub);
+        font-size: 0.75rem;
+      }
+      .corr-result {
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: var(--org);
+        margin-bottom: 4px;
+      }
+      .corr-desc {
+        font-size: 0.7rem;
+        color: var(--sub2);
+        line-height: 1.5;
+      }
+
+      /* ── PATIENT INFO ── */
+      .pt-avatar {
+        width: 64px;
+        height: 64px;
+        border-radius: 14px;
+        background: linear-gradient(135deg, var(--blu), var(--pur));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.8rem;
+        margin-bottom: 12px;
+      }
+      .pt-name {
+        font-size: 1.3rem;
+        font-weight: 900;
+        margin-bottom: 3px;
+      }
+      .pt-meta {
+        font-size: 0.75rem;
+        color: var(--sub);
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+      .pt-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 2px 9px;
+        border-radius: 5px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        background: var(--bg3);
+        border: 1px solid var(--bdr);
+      }
+
+      /* ── PROGRESS BAR ── */
+      .prog-bar {
+        height: 6px;
+        background: var(--bg4);
+        border-radius: 3px;
+        overflow: hidden;
+      }
+      .prog-fill {
+        height: 100%;
+        border-radius: 3px;
+        transition: width 0.6s ease;
+      }
+
+      /* ── HISTORY LIST ── */
+      .hist-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 0;
+        border-bottom: 1px solid var(--bdr);
+        cursor: pointer;
+        transition: 0.12s;
+      }
+      .hist-item:last-child {
+        border-bottom: none;
+      }
+      .hist-item:hover {
+        background: var(--bg3);
+        padding-left: 8px;
+        border-radius: 8px;
+      }
+      .hist-date {
+        font-family: "DM Mono", monospace;
+        font-size: 0.78rem;
+        font-weight: 700;
+        color: var(--blu);
+        min-width: 90px;
+      }
+      .hist-score {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 900;
+        font-size: 0.82rem;
+        font-family: "DM Mono", monospace;
+      }
+      .hist-abn-count {
+        font-size: 0.72rem;
+        color: var(--sub);
+      }
+      .hist-items-preview {
+        display: flex;
+        gap: 4px;
+        flex-wrap: wrap;
+        flex: 1;
+      }
+      .hist-chip {
+        padding: 1px 6px;
+        border-radius: 4px;
+        font-size: 0.64rem;
+        font-weight: 700;
+      }
+
+      /* ── SCORE LEVELS ── */
+      .score-lv-excellent {
+        color: var(--grn);
+      }
+      .score-lv-good {
+        color: var(--blu);
+      }
+      .score-lv-fair {
+        color: var(--yel);
+      }
+      .score-lv-poor {
+        color: var(--org);
+      }
+      .score-lv-critical {
+        color: var(--red);
+      }
+
+      /* ── TOP CHANGE ── */
+      .top-change-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 0;
+        border-bottom: 1px solid var(--bdr);
+      }
+      .top-change-item:last-child {
+        border-bottom: none;
+      }
+      .tc-rank {
+        width: 22px;
+        height: 22px;
+        border-radius: 6px;
+        font-size: 0.7rem;
+        font-weight: 900;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .tc-name {
+        flex: 1;
+        font-size: 0.82rem;
+        font-weight: 700;
+      }
+      .tc-val {
+        font-family: "DM Mono", monospace;
+        font-size: 0.78rem;
+        font-weight: 700;
+      }
+
+      /* ── EVAL EDITOR ── */
+      .eval-editor {
+        background: var(--bg3);
+        border: 1px solid var(--bdr);
+        border-radius: 10px;
+        padding: 14px;
+        margin-bottom: 12px;
+      }
+      .eval-editor-hdr {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+        font-weight: 800;
+        font-size: 0.88rem;
+      }
+      .eval-editor textarea {
+        background: var(--bg4);
+        border: 1px solid var(--bdr);
+        color: var(--text);
+        font-family: "DM Mono", monospace;
+        font-size: 0.75rem;
+        width: 100%;
+        border-radius: 8px;
+        padding: 10px;
+        resize: vertical;
+        min-height: 80px;
+      }
+      .eval-editor textarea:focus {
+        border-color: var(--blu);
+        outline: none;
+      }
+
+      /* ── SCROLLBAR ── */
+      ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+      ::-webkit-scrollbar-track {
+        background: var(--bg);
+      }
+      ::-webkit-scrollbar-thumb {
+        background: var(--bdr2);
+        border-radius: 3px;
+      }
+
+      /* ── RESPONSIVE ── */
+      @media (max-width: 900px) {
+        .kpi-grid {
+          grid-template-columns: 1fr 1fr;
+        }
+        .grid4 {
+          grid-template-columns: 1fr 1fr;
+        }
+        .food-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+      @media (max-width: 600px) {
+        .pg {
+          padding: 14px;
+        }
+        .kpi-grid {
+          grid-template-columns: 1fr 1fr;
+        }
+        .grid2,
+        .grid3,
+        .grid4 {
+          grid-template-columns: 1fr;
+        }
+        .hdr {
+          padding: 10px 14px;
+        }
+        .tabs {
+          padding: 0 8px;
+        }
+      }
+
+      /* ── MINI CHART ── */
+      .sparkline {
+        display: inline-flex;
+        align-items: flex-end;
+        gap: 2px;
+        height: 24px;
+        vertical-align: middle;
+      }
+      .spark-bar {
+        width: 4px;
+        border-radius: 1px;
+        min-height: 2px;
+        transition: 0.3s;
+      }
+
+      /* ── SECTION HEADER ── */
+      .sec-hdr {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+      }
+      .sec-title {
+        font-size: 1.1rem;
+        font-weight: 900;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .sec-title span {
+        font-size: 0.68rem;
+        font-weight: 500;
+        color: var(--sub);
+        margin-left: 4px;
+        font-family: "DM Mono", monospace;
+      }
+
+      /* ── MODAL ── */
+      .modal-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.7);
+        z-index: 500;
+        align-items: center;
+        justify-content: center;
+      }
+      .modal-overlay.on {
+        display: flex;
+      }
+      .modal {
+        background: var(--bg2);
+        border: 1px solid var(--bdr);
+        border-radius: 16px;
+        padding: 24px;
+        width: 90%;
+        max-width: 600px;
+        max-height: 85vh;
+        overflow-y: auto;
+      }
+      .modal-title {
+        font-size: 1rem;
+        font-weight: 900;
+        margin-bottom: 16px;
+        display: flex;
+        justify-content: space-between;
+      }
+      .modal-close {
+        cursor: pointer;
+        color: var(--sub);
+        font-size: 1.2rem;
+      }
+
+      /* ── TABS inside card ── */
+      .inner-tabs {
+        display: flex;
+        gap: 0;
+        border-bottom: 1px solid var(--bdr);
+        margin-bottom: 14px;
+      }
+      .itb {
+        padding: 7px 14px;
+        cursor: pointer;
+        border: none;
+        background: transparent;
+        color: var(--sub);
+        font-size: 0.75rem;
+        font-weight: 700;
+        font-family: inherit;
+        border-bottom: 2px solid transparent;
+        transition: 0.15s;
+        white-space: nowrap;
+      }
+      .itb.on {
+        color: var(--blu);
+        border-bottom-color: var(--blu);
+      }
+
+      /* ── EMPTY STATE ── */
+      .empty {
+        text-align: center;
+        padding: 50px 20px;
+        color: var(--sub);
+      }
+      .empty-ico {
+        font-size: 2.5rem;
+        margin-bottom: 10px;
+      }
+      .empty-msg {
+        font-size: 0.88rem;
+        margin-bottom: 6px;
+        font-weight: 700;
+      }
+      .empty-sub {
+        font-size: 0.76rem;
+        color: var(--sub2);
+      }
+
+      /* ── GROUP HEADER ── */
+      .group-hdr {
+        background: var(--bg3);
+        padding: 8px 12px;
+        border-radius: 8px;
+        font-size: 0.72rem;
+        font-weight: 800;
+        color: var(--sub);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin: 10px 0 6px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        cursor: pointer;
+        user-select: none;
+      }
+      .group-hdr:hover {
+        border-color: var(--bdr2);
       }
     </style>
   </head>
   <body>
-    <h2>혈액 검사 판정 시스템</h2>
+    <!-- HEADER -->
+    <div class="hdr">
+      <div class="hdr-brand">
+        <span style="font-size: 1.4rem">🩸</span>
+        <div>
+          <h1>혈액검사 통합관리 시스템</h1>
+          <span id="last-update-lbl">마지막 업데이트 없음</span>
+        </div>
+        <span class="hdr-badge" id="record-count-badge">0건</span>
+      </div>
+      <div class="hdr-btns">
+        <button class="hbtn" onclick="exportData()">💾 백업</button>
+        <button
+          class="hbtn"
+          onclick="document.getElementById('importFile').click()"
+        >
+          📂 불러오기
+        </button>
+        <button class="hbtn danger" onclick="resetAll()">⚠ 초기화</button>
+        <input
+          type="file"
+          id="importFile"
+          accept=".json"
+          style="display: none"
+          onchange="importData(event)"
+        />
+      </div>
+    </div>
 
-    <label for="typeSelect">검사 유형 선택:</label>
-    <select id="typeSelect" onchange="filterTests()">
-      <option value="all">전체</option>
-      <option value="혈액학">혈액학</option>
-      <option value="신장">신장</option>
-      <option value="간">간</option>
-      <option value="전해질">전해질</option>
-      <option value="지질">지질</option>
-      <option value="당뇨">당뇨</option>
-      <option value="호르몬">호르몬</option>
-      <option value="면역학">면역학</option>
-      <option value="기타(췌장/기타 면역,화학검사)">
-        기타(췌장/기타 면역,화학검사)
-      </option>
-    </select>
+    <!-- TABS -->
+    <div class="tabs">
+      <button class="tb on" onclick="goTab('home', this)">🏠 홈</button>
+      <button class="tb" onclick="goTab('patient', this)">👤 환자 정보</button>
+      <button class="tb" onclick="goTab('entry', this)">📋 검사 입력</button>
+      <button class="tb" onclick="goTab('history', this)">📅 검사 이력</button>
+      <button class="tb" onclick="goTab('stats', this)">📊 통계 & 추이</button>
+      <button class="tb" onclick="goTab('insights', this)">
+        🔬 AI 인사이트
+      </button>
+      <button class="tb" onclick="goTab('strategy', this)">
+        💊 정상화 전략
+      </button>
+      <button class="tb" onclick="goTab('eval', this)">📝 평가 편집</button>
+    </div>
 
-    <table id="bloodTestTable">
-      <thead>
-        <tr>
-          <th onclick="sortTable(0)">검사 항목</th>
-          <th onclick="sortTable(1)">정상 범위</th>
-          <th onclick="sortTable(2)">입력값</th>
-          <th onclick="sortTable(3)">판정</th>
-          <th>위험 요인</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
+    <!-- ══════════════ HOME ══════════════ -->
+    <div id="pg-home" class="pg on">
+      <div class="sec-hdr">
+        <div class="sec-title">
+          🏠 건강 대시보드<span id="home-date-lbl"></span>
+        </div>
+      </div>
+
+      <!-- KPI -->
+      <div class="kpi-grid">
+        <div class="kpi">
+          <div class="kpi-label">건강 점수</div>
+          <div class="kpi-val" id="k-score" style="color: var(--grn)">—</div>
+          <div class="kpi-sub" id="k-score-lbl">검사 기록 없음</div>
+          <div class="kpi-ico">❤️</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">비정상 항목</div>
+          <div class="kpi-val" id="k-abn" style="color: var(--red)">—</div>
+          <div class="kpi-sub" id="k-abn-sub">전체 검사 항목 중</div>
+          <div class="kpi-ico">⚠️</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">총 검사 기록</div>
+          <div class="kpi-val" id="k-total" style="color: var(--blu)">0</div>
+          <div class="kpi-sub">건 누적</div>
+          <div class="kpi-ico">📋</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">마지막 검사</div>
+          <div
+            class="kpi-val"
+            id="k-last"
+            style="color: var(--yel); font-size: 1.2rem"
+          >
+            —
+          </div>
+          <div class="kpi-sub" id="k-last-days"></div>
+          <div class="kpi-ico">📅</div>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px">
+        <!-- 건강 점수 링 -->
+        <div class="card" style="text-align: center">
+          <div class="card-title">건강 종합 점수</div>
+          <div class="health-score-ring">
+            <svg viewBox="0 0 120 120" width="120" height="120">
+              <circle
+                cx="60"
+                cy="60"
+                r="50"
+                fill="none"
+                stroke="var(--bg3)"
+                stroke-width="10"
+              />
+              <circle
+                cx="60"
+                cy="60"
+                r="50"
+                fill="none"
+                id="score-ring"
+                stroke="var(--grn)"
+                stroke-width="10"
+                stroke-dasharray="314"
+                stroke-dashoffset="314"
+                stroke-linecap="round"
+                style="transition: stroke-dashoffset 1.2s ease"
+              />
+            </svg>
+            <div class="health-score-val">
+              <div class="health-score-num" id="score-num">—</div>
+              <div class="health-score-lbl">/ 100</div>
+            </div>
+          </div>
+          <div
+            id="score-grade"
+            style="font-size: 0.9rem; font-weight: 800; margin-bottom: 4px"
+          >
+            —
+          </div>
+          <div id="score-desc" style="font-size: 0.72rem; color: var(--sub)">
+            검사 기록을 추가하세요
+          </div>
+        </div>
+
+        <!-- 이상 수치 알림 -->
+        <div class="card" style="grid-column: span 2">
+          <div class="card-title">⚠ 이상 수치 알림</div>
+          <div id="alert-list">
+            <div class="empty">
+              <div class="empty-ico">✅</div>
+              <div class="empty-msg">이상 수치 없음</div>
+              <div class="empty-sub">
+                검사 기록을 추가하면 자동으로 분석됩니다
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div
+        style="
+          display: grid;
+          grid-template-columns: 1fr 1fr 1fr;
+          gap: 16px;
+          margin-top: 16px;
+        "
+      >
+        <!-- 가장 개선된 TOP3 -->
+        <div class="card">
+          <div class="card-title">📈 가장 개선된 수치 TOP 3</div>
+          <div id="top-improved">
+            <div class="empty" style="padding: 20px">
+              <div class="empty-sub">2회 이상 검사 필요</div>
+            </div>
+          </div>
+        </div>
+        <!-- 가장 악화된 TOP3 -->
+        <div class="card">
+          <div class="card-title">📉 가장 악화된 수치 TOP 3</div>
+          <div id="top-worsened">
+            <div class="empty" style="padding: 20px">
+              <div class="empty-sub">2회 이상 검사 필요</div>
+            </div>
+          </div>
+        </div>
+        <!-- 변화율 요약 -->
+        <div class="card">
+          <div class="card-title">📊 기간별 변화율</div>
+          <div id="period-change">
+            <div class="empty" style="padding: 20px">
+              <div class="empty-sub">2회 이상 검사 필요</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 상관관계 하이라이트 -->
+      <div class="card" style="margin-top: 16px">
+        <div class="card-title">🔗 수치 간 연결고리 분석</div>
+        <div id="corr-highlights">
+          <div class="empty">
+            <div class="empty-sub">
+              검사 기록이 쌓이면 연결고리 분석이 표시됩니다
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════ PATIENT ══════════════ -->
+    <div id="pg-patient" class="pg">
+      <div class="sec-hdr"><div class="sec-title">👤 환자 기본 정보</div></div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px">
+        <div class="card">
+          <div class="card-title">기본 신체 정보</div>
+          <div class="grid2">
+            <div class="fg">
+              <label>이름</label
+              ><input id="pt-name" type="text" placeholder="홍길동" />
+            </div>
+            <div class="fg">
+              <label>생년월일</label><input id="pt-birth" type="date" />
+            </div>
+            <div class="fg">
+              <label>성별</label
+              ><select id="pt-gender">
+                <option value="남">남성</option>
+                <option value="여">여성</option>
+              </select>
+            </div>
+            <div class="fg">
+              <label>혈액형</label
+              ><select id="pt-blood">
+                <option>A+</option>
+                <option>A-</option>
+                <option>B+</option>
+                <option>B-</option>
+                <option>O+</option>
+                <option>O-</option>
+                <option>AB+</option>
+                <option>AB-</option>
+                <option>모름</option>
+              </select>
+            </div>
+            <div class="fg">
+              <label>키 (cm)</label
+              ><input id="pt-height" type="number" placeholder="170" />
+            </div>
+            <div class="fg">
+              <label>체중 (kg)</label
+              ><input id="pt-weight" type="number" placeholder="70" />
+            </div>
+          </div>
+          <div class="grid2">
+            <div class="fg">
+              <label>수축기 혈압 (mmHg)</label
+              ><input id="pt-bp-s" type="number" placeholder="120" />
+            </div>
+            <div class="fg">
+              <label>이완기 혈압 (mmHg)</label
+              ><input id="pt-bp-d" type="number" placeholder="80" />
+            </div>
+            <div class="fg">
+              <label>공복혈당 (mg/dL)</label
+              ><input id="pt-fbs" type="number" placeholder="90" />
+            </div>
+            <div class="fg">
+              <label>흡연 여부</label
+              ><select id="pt-smoke">
+                <option value="비흡연">비흡연</option>
+                <option value="흡연">흡연</option>
+                <option value="금연">금연 중</option>
+              </select>
+            </div>
+          </div>
+          <div class="fg">
+            <label>복용 중인 약물</label
+            ><textarea
+              id="pt-meds"
+              rows="2"
+              placeholder="예: 아스피린 100mg, 메트포르민 500mg..."
+            ></textarea>
+          </div>
+          <div class="fg">
+            <label>현재 질환</label
+            ><textarea
+              id="pt-disease"
+              rows="2"
+              placeholder="예: 만성 췌장염, 당뇨 전단계..."
+            ></textarea>
+          </div>
+        </div>
+        <div>
+          <div class="card">
+            <div class="card-title">가족력</div>
+            <div id="family-history-list"></div>
+            <div style="display: flex; gap: 8px; margin-top: 10px">
+              <select
+                id="fh-disease"
+                style="
+                  flex: 1;
+                  padding: 7px 10px;
+                  border: 1px solid var(--bdr);
+                  border-radius: 8px;
+                  background: var(--bg3);
+                  color: var(--text);
+                  font-family: inherit;
+                  font-size: 0.82rem;
+                "
+              >
+                <option>당뇨</option>
+                <option>고혈압</option>
+                <option>심혈관 질환</option>
+                <option>암</option>
+                <option>뇌졸중</option>
+                <option>췌장염</option>
+                <option>간질환</option>
+                <option>신장질환</option>
+                <option>갑상선 질환</option>
+                <option>빈혈</option>
+                <option>자가면역 질환</option>
+                <option>고지혈증</option>
+              </select>
+              <select
+                id="fh-relation"
+                style="
+                  padding: 7px 10px;
+                  border: 1px solid var(--bdr);
+                  border-radius: 8px;
+                  background: var(--bg3);
+                  color: var(--text);
+                  font-family: inherit;
+                  font-size: 0.82rem;
+                "
+              >
+                <option>부</option>
+                <option>모</option>
+                <option>형제/자매</option>
+                <option>조부모</option>
+              </select>
+              <button
+                class="btn btn-ghost"
+                onclick="addFamilyHistory()"
+                style="white-space: nowrap"
+              >
+                + 추가
+              </button>
+            </div>
+          </div>
+          <div class="card" style="margin-top: 0">
+            <div class="card-title">BMI & 신체 지표</div>
+            <div id="bmi-display" style="text-align: center; padding: 10px 0">
+              <div
+                style="
+                  font-size: 2.5rem;
+                  font-weight: 900;
+                  font-family: &quot;DM Mono&quot;, monospace;
+                "
+                id="bmi-val"
+              >
+                —
+              </div>
+              <div style="font-size: 0.8rem; color: var(--sub)" id="bmi-grade">
+                키/체중을 입력하세요
+              </div>
+              <div style="margin-top: 12px" id="bmi-bar-wrap"></div>
+            </div>
+          </div>
+          <div class="card" style="margin-top: 0">
+            <div class="card-title">메모 / 특이사항</div>
+            <div class="fg">
+              <textarea
+                id="pt-memo"
+                rows="3"
+                placeholder="알레르기, 특이 반응, 주의사항 등..."
+              ></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-blu" onclick="savePatient()">💾 저장</button>
+      </div>
+    </div>
+
+    <!-- ══════════════ ENTRY ══════════════ -->
+    <div id="pg-entry" class="pg">
+      <div class="sec-hdr">
+        <div class="sec-title">
+          📋 혈액검사 입력<span id="entry-edit-lbl"></span>
+        </div>
+        <div style="display: flex; gap: 8px; align-items: center">
+          <input
+            type="date"
+            id="entry-date"
+            style="
+              padding: 7px 11px;
+              border: 1px solid var(--bdr);
+              border-radius: 8px;
+              background: var(--bg3);
+              color: var(--text);
+              font-family: &quot;DM Mono&quot;, monospace;
+              font-size: 0.82rem;
+            "
+          />
+          <input
+            type="text"
+            id="entry-hospital"
+            placeholder="병원/기관명 (선택)"
+            style="
+              padding: 7px 11px;
+              border: 1px solid var(--bdr);
+              border-radius: 8px;
+              background: var(--bg3);
+              color: var(--text);
+              font-family: inherit;
+              font-size: 0.82rem;
+              width: 180px;
+            "
+          />
+          <select
+            id="type-filter"
+            onchange="renderEntryTable()"
+            style="
+              padding: 7px 11px;
+              border: 1px solid var(--bdr);
+              border-radius: 8px;
+              background: var(--bg3);
+              color: var(--text);
+              font-family: inherit;
+              font-size: 0.82rem;
+            "
+          >
+            <option value="all">전체 항목</option>
+            <option value="혈액학">혈액학</option>
+            <option value="신장">신장</option>
+            <option value="간">간</option>
+            <option value="전해질">전해질</option>
+            <option value="지질">지질</option>
+            <option value="당뇨">당뇨</option>
+            <option value="호르몬">호르몬</option>
+            <option value="면역학">면역학</option>
+            <option value="췌장">췌장</option>
+            <option value="철분/빈혈">철분/빈혈</option>
+            <option value="비타민/영양">비타민/영양</option>
+            <option value="기타">기타</option>
+          </select>
+        </div>
+      </div>
+      <div id="entry-table-container"></div>
+      <div class="btn-row" style="margin-top: 12px">
+        <button class="btn btn-blu" onclick="saveEntry()" id="entry-save-btn">
+          💾 검사 기록 저장
+        </button>
+        <button class="btn btn-ghost" onclick="resetEntryForm()">초기화</button>
+        <button class="btn btn-ghost" onclick="autofillSample()">
+          📊 샘플 데이터 채우기
+        </button>
+      </div>
+      <div id="entry-preview" style="margin-top: 16px"></div>
+    </div>
+
+    <!-- ══════════════ HISTORY ══════════════ -->
+    <div id="pg-history" class="pg">
+      <div class="sec-hdr">
+        <div class="sec-title">📅 검사 이력</div>
+        <button
+          class="btn btn-ghost"
+          onclick="goTab('entry', document.querySelector('.tb:nth-child(3)'))"
+        >
+          + 새 기록 추가
+        </button>
+      </div>
+      <div id="history-list-container"></div>
+    </div>
+
+    <!-- ══════════════ STATS ══════════════ -->
+    <div id="pg-stats" class="pg">
+      <div class="sec-hdr">
+        <div class="sec-title">📊 통계 & 추이 분석</div>
+        <div style="display: flex; gap: 8px">
+          <select
+            id="stats-type-filter"
+            onchange="renderStats()"
+            style="
+              padding: 7px 11px;
+              border: 1px solid var(--bdr);
+              border-radius: 8px;
+              background: var(--bg3);
+              color: var(--text);
+              font-family: inherit;
+              font-size: 0.82rem;
+            "
+          >
+            <option value="all">전체 그룹</option>
+            <option value="빈혈/혈액">빈혈/혈액</option>
+            <option value="간수치">간수치</option>
+            <option value="췌장수치">췌장수치</option>
+            <option value="당수치">당수치</option>
+            <option value="신장수치">신장수치</option>
+            <option value="지질/콜레스테롤">지질/콜레스테롤</option>
+            <option value="면역/염증">면역/염증</option>
+            <option value="갑상선">갑상선</option>
+            <option value="철분">철분</option>
+            <option value="전해질">전해질</option>
+          </select>
+        </div>
+      </div>
+      <div id="stats-charts-container"></div>
+    </div>
+
+    <!-- ══════════════ INSIGHTS ══════════════ -->
+    <div id="pg-insights" class="pg">
+      <div class="sec-hdr">
+        <div class="sec-title">
+          🔬 AI 인사이트 엔진<span>규칙 기반 분석 · 50+ 의학적 연결고리</span>
+        </div>
+      </div>
+      <div
+        class="tip"
+        style="
+          background: var(--blu-pale);
+          border-left: 3px solid var(--blu);
+          border-radius: 0 9px 9px 0;
+          padding: 10px 14px;
+          font-size: 0.78rem;
+          color: #8bc4ff;
+          margin-bottom: 14px;
+          line-height: 1.7;
+        "
+      >
+        ⚠ 이 분석은 의학적 진단이 아닌 참고용 정보입니다. 이상 수치가 발견된
+        경우 반드시 의사와 상담하세요.
+      </div>
+      <div id="insights-container">
+        <div class="empty">
+          <div class="empty-ico">🔬</div>
+          <div class="empty-msg">분석 대기 중</div>
+          <div class="empty-sub">검사 기록을 추가하면 자동 분석됩니다</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════ STRATEGY ══════════════ -->
+    <div id="pg-strategy" class="pg">
+      <div class="sec-hdr"><div class="sec-title">💊 정상화 전략</div></div>
+      <div id="strategy-container">
+        <div class="empty">
+          <div class="empty-ico">💊</div>
+          <div class="empty-msg">전략 생성 대기 중</div>
+          <div class="empty-sub">
+            검사 기록을 추가하면 맞춤 전략이 생성됩니다
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════ EVAL EDITOR ══════════════ -->
+    <div id="pg-eval" class="pg">
+      <div class="sec-hdr"><div class="sec-title">📝 평가 항목 편집</div></div>
+      <div class="card">
+        <div class="card-title">검사 항목 정상 범위 & 평가 텍스트 수정</div>
+        <div id="eval-editor-list"></div>
+      </div>
+    </div>
+
+    <!-- MODAL -->
+    <div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
+      <div class="modal" id="modal-content">
+        <div class="modal-title">
+          <span id="modal-title-text">상세 정보</span
+          ><span class="modal-close" onclick="closeModalDirect()">✕</span>
+        </div>
+        <div id="modal-body"></div>
+      </div>
+    </div>
 
     <script>
-      const bloodTests = [
-        // 혈액학 항목
+      // ══════════════════════════════════════════════════════════════
+      //  BLOOD TEST DEFINITIONS (원본 파일 기반 + 확장)
+      // ══════════════════════════════════════════════════════════════
+      const TESTS = [
+        // ── 혈액학 ──
         {
-          type: "혈액학",
+          grp: "혈액학",
+          cat: "빈혈/혈액",
           name: "RBC",
           min: 4.7,
           max: 6.1,
           unit: "백만/µL",
-          highRisk: "탈수 가능, 진성 적혈구증가증(골수식성 질환)가능",
-          lowRisk: "빈혈 위험(철결핍성,엽산,B12결핍성, 만성질환, 출혈,용혈 등)",
+          highRisk: "탈수·진성 적혈구증가증(골수증식 질환)",
+          lowRisk: "빈혈(철결핍성·엽산·B12결핍성·만성질환·출혈·용혈)",
         },
         {
-          type: "혈액학",
+          grp: "혈액학",
+          cat: "빈혈/혈액",
           name: "Hemoglobin",
           min: 13.8,
           max: 17.2,
           unit: "g/dL",
-          highRisk:
-            "혈액 농축 가능/탈수,고산증/만성 폐질환, 심장질환에 따른 보상성 증가",
+          highRisk: "혈액 농축·탈수·고산증·만성 폐질환·심장질환 보상성 증가",
           lowRisk:
-            "빈혈 위험(철결핍성,엽산,B12결핍성등)/신장질환(에리트로포이에틴 감소)",
+            "빈혈(철결핍성·엽산·B12결핍성)·신장질환(에리트로포이에틴 감소)",
         },
         {
-          type: "혈액학",
+          grp: "혈액학",
+          cat: "빈혈/혈액",
           name: "Hematocrit",
           min: 38.3,
           max: 48.6,
           unit: "%",
-          highRisk: "탈수로 혈장량 감소,적혈구 증가증",
-          lowRisk: "빈혈 위험, 과다출혈, 수분과다(임신, 수액 과다투여 등)",
+          highRisk: "탈수·혈장량 감소·적혈구증가증",
+          lowRisk: "빈혈·과다출혈·수분과다(임신·수액 과다)",
         },
         {
-          type: "혈액학",
-          name: "MCV(평균적혈구 용적))",
+          grp: "혈액학",
+          cat: "빈혈/혈액",
+          name: "MCV",
           min: 80,
           max: 100,
           unit: "fL",
-          highRisk: "거대적혈모구 빈혈 가능/알코올중독,간질환 등과 연관",
-          lowRisk: "철 결핍성 빈혈, 만성질환에 의한 빈혈 가능",
+          highRisk: "거대적혈모구 빈혈·알코올중독·간질환",
+          lowRisk: "철 결핍성 빈혈·만성질환 빈혈",
         },
         {
-          type: "혈액학",
-          name: "MCH(적혈구 하나당 hg양)",
+          grp: "혈액학",
+          cat: "빈혈/혈액",
+          name: "MCH",
           min: 27,
           max: 33,
           unit: "pg",
-          highRisk:
-            "거대적혈모구 빈혈(B12,엽산 결핍 등)/알코올중독,간질환 등과 연관 가능",
-          lowRisk: "철 결핍성 빈혈 가능,알코올 중독,간질환 등과 연관",
+          highRisk: "거대적혈모구 빈혈(B12·엽산 결핍)·간질환",
+          lowRisk: "철 결핍성 빈혈·알코올중독·간질환",
         },
         {
-          type: "혈액학",
-          name: "MCHC(평균 적혈구 hg농도)",
+          grp: "혈액학",
+          cat: "빈혈/혈액",
+          name: "MCHC",
           min: 32,
           max: 36,
           unit: "g/dL",
-          highRisk: "구형적혈구증 가능, 탈수 등으로 농축된 경우",
-          lowRisk: "철 결핍성 빈혈(저색소성)) 가능",
+          highRisk: "구형적혈구증·탈수 농축",
+          lowRisk: "철 결핍성 빈혈(저색소성)",
         },
         {
-          type: "혈액학",
-          name: "RDW(적혈구 분포 폭)",
+          grp: "혈액학",
+          cat: "빈혈/혈액",
+          name: "RDW",
           min: 11.5,
           max: 14.5,
           unit: "%",
-          highRisk: "적혈구 생성 장애 가능",
+          highRisk: "적혈구 생성 장애·혼합 빈혈",
           lowRisk: "정상 범위",
         },
         {
-          type: "혈액학",
-          name: "WBC",
-          min: 4.0,
-          max: 10.0,
-          unit: "천/µL",
-          highRisk:
-            "감염, 염증성 질환 가능/백혈병 등 혈액암/스트레스,흡연,스테로이드 복용 등",
-          lowRisk:
-            "면역기능 저하/만성 감염, 자가면역질환,골수기능 저하/바이러스 감염/약물(항암제 등) 영향",
-        },
-        {
-          type: "혈액학",
-          name: "Neutrophils(백혈구분핵-호중구)",
-          min: 40,
-          max: 70,
-          unit: "%",
-          highRisk: "세균감염 가능",
-          lowRisk: "감염 저항력 감소",
-        },
-        {
-          type: "혈액학",
-          name: "Lymphocytes(백혈구분핵-림프구)",
-          min: 20,
-          max: 40,
-          unit: "%",
-          highRisk: "바이러스 감염 가능",
-          lowRisk: "면역력 저하 가능",
-        },
-        {
-          type: "혈액학",
-          name: "Monocytes(백혈구분핵-단핵구)",
-          min: 2,
-          max: 8,
-          unit: "%",
-          highRisk: "만성염증 가능",
-          lowRisk: "면역기능 약화",
-        },
-        {
-          type: "혈액학",
-          name: "Eosinophils(백혈구분핵-호산구)",
-          min: 0,
-          max: 5,
-          unit: "%",
-          highRisk: "알레르기 반응 가능",
-          lowRisk: "정상 범위",
-        },
-        {
-          type: "혈액학",
-          name: "Basophils(백혈구분핵-호염기구)",
-          min: 0,
-          max: 1,
-          unit: "%",
-          highRisk: "알레르기 가능",
-          lowRisk: "정상 범위",
-        },
-        {
-          type: "혈액학",
-          name: "Platelets(혈소판))",
-          min: 150,
-          max: 450,
-          unit: "천/µL",
-          highRisk:
-            "혈전 생성 가능/염증성 질환, 감염,골수증식성 질환(진성 적혈구증가증 등)",
-          lowRisk:
-            "출혈 가능/재생불량성 빈혈,백혈병 등 골수문제/간질환,약물 영향 등",
-        },
-        {
-          type: "혈액학",
-          name: "MPV(Mean Platelet Volume)",
-          min: 7.5,
-          max: 11.5,
-          unit: "fL",
-          highRisk:
-            "혈전 가능성 증가/골수에서 큰 혈소판 생성/혈소판 파괴 후 보상적 생성",
-          lowRisk:
-            "혈소판 기능 저하/작은 혈소판 우새/일부 유전성 질환(와플 증후군 등)",
-        },
-        {
-          type: "혈액학",
-          name: "ESR",
-          min: 0,
-          max: 20,
-          unit: "mm/hr",
-          highRisk: "염증 가능",
-          lowRisk: "정상 범위",
-        },
-        {
-          type: "혈액학",
+          grp: "혈액학",
+          cat: "빈혈/혈액",
           name: "Reticulocyte",
           min: 0.5,
           max: 1.5,
           unit: "%",
-          highRisk: "적혈구 생성 증가",
-          lowRisk: "적혈구 생성 감소",
+          highRisk: "적혈구 생성 증가(용혈·출혈 후 회복)",
+          lowRisk: "적혈구 생성 감소(골수 억제)",
         },
-
-        // 신장 항목
         {
-          type: "신장",
+          grp: "혈액학",
+          cat: "면역/염증",
+          name: "WBC",
+          min: 4.0,
+          max: 10.0,
+          unit: "천/µL",
+          highRisk: "감염·염증·백혈병·스트레스·스테로이드",
+          lowRisk: "면역기능 저하·자가면역질환·골수기능 저하·항암제",
+        },
+        {
+          grp: "혈액학",
+          cat: "면역/염증",
+          name: "Neutrophils",
+          min: 40,
+          max: 70,
+          unit: "%",
+          highRisk: "세균감염·스트레스·스테로이드",
+          lowRisk: "감염 저항력 감소·바이러스 감염",
+        },
+        {
+          grp: "혈액학",
+          cat: "면역/염증",
+          name: "Lymphocytes",
+          min: 20,
+          max: 40,
+          unit: "%",
+          highRisk: "바이러스 감염·림프구성 백혈병",
+          lowRisk: "면역력 저하·HIV·스테로이드",
+        },
+        {
+          grp: "혈액학",
+          cat: "면역/염증",
+          name: "Monocytes",
+          min: 2,
+          max: 8,
+          unit: "%",
+          highRisk: "만성염증·결핵·단핵구성 백혈병",
+          lowRisk: "면역기능 약화",
+        },
+        {
+          grp: "혈액학",
+          cat: "면역/염증",
+          name: "Eosinophils",
+          min: 0,
+          max: 5,
+          unit: "%",
+          highRisk: "알레르기·기생충 감염·천식",
+          lowRisk: "정상 범위",
+        },
+        {
+          grp: "혈액학",
+          cat: "면역/염증",
+          name: "Basophils",
+          min: 0,
+          max: 1,
+          unit: "%",
+          highRisk: "알레르기·만성 골수성 백혈병",
+          lowRisk: "정상 범위",
+        },
+        {
+          grp: "혈액학",
+          cat: "빈혈/혈액",
+          name: "Platelets",
+          min: 150,
+          max: 450,
+          unit: "천/µL",
+          highRisk: "혈전 위험·염증·골수증식성 질환",
+          lowRisk: "출혈 위험·재생불량성 빈혈·간질환·약물",
+        },
+        {
+          grp: "혈액학",
+          cat: "빈혈/혈액",
+          name: "MPV",
+          min: 7.5,
+          max: 11.5,
+          unit: "fL",
+          highRisk: "혈전 위험·큰 혈소판 생성",
+          lowRisk: "혈소판 기능 저하",
+        },
+        {
+          grp: "혈액학",
+          cat: "면역/염증",
+          name: "ESR",
+          min: 0,
+          max: 20,
+          unit: "mm/hr",
+          highRisk: "염증·감염·자가면역질환·암",
+          lowRisk: "정상 범위",
+        },
+        // ── 신장 ──
+        {
+          grp: "신장",
+          cat: "신장수치",
           name: "BUN",
           min: 7,
           max: 20,
           unit: "mg/dL",
-          highRisk: "신장 질환, 심부전, 탈수, 고단백 식사",
-          lowRisk: "영양 부족, 간 질환, 과도한 수분 섭취",
+          highRisk: "신장 질환·심부전·탈수·고단백 식사",
+          lowRisk: "영양 부족·간 질환·과다 수분",
         },
         {
-          type: "신장",
+          grp: "신장",
+          cat: "신장수치",
           name: "Creatinine",
           min: 0.6,
           max: 1.3,
           unit: "mg/dL",
-          highRisk: "신장 기능 저하, 근육 손상, 탈수",
-          lowRisk: "근육량 부족, 영양 결핍",
+          highRisk: "신장 기능 저하·근육 손상·탈수",
+          lowRisk: "근육량 부족·영양 결핍",
         },
         {
-          type: "신장",
+          grp: "신장",
+          cat: "신장수치",
           name: "BUN/Creatinine Ratio",
           min: 10,
           max: 20,
           unit: "",
-          highRisk:
-            "신장 기능 저하, 심부전, 탈수, 위장관 출혈, 고단백 식사, 신장 동맥 협착, 쇼크 상태",
-          lowRisk:
-            "영양 부족, 간 질환, 근육량 감소, 과도한 수분 섭취, 중증 근무력증, 임신",
+          highRisk: "신전성 신부전·탈수·위장관 출혈",
+          lowRisk: "영양 부족·간 질환·근육량 감소",
         },
         {
-          type: "신장",
+          grp: "신장",
+          cat: "신장수치",
           name: "GFR",
           min: 90,
           max: 120,
           unit: "mL/min/1.73m²",
-          highRisk: "신장 기능 저하, 신부전",
-          lowRisk: "신장 질환, 노화",
+          highRisk: "신장 기능 저하·신부전",
+          lowRisk: "정상 범위 이하(신부전 의심)",
         },
         {
-          type: "신장",
+          grp: "신장",
+          cat: "신장수치",
           name: "Uric Acid",
           min: 3.4,
           max: 7.0,
           unit: "mg/dL",
-          highRisk: "통풍, 신장 결석, 대사 증후군",
+          highRisk: "통풍·신장 결석·대사 증후군",
           lowRisk: "정상 범위",
         },
         {
-          type: "신장",
+          grp: "신장",
+          cat: "신장수치",
           name: "Cystatin C",
           min: 0.5,
           max: 1.0,
           unit: "mg/L",
-          highRisk: "신장 기능 저하, 심혈관 질환 위험",
+          highRisk: "신장 기능 저하·심혈관 위험",
           lowRisk: "정상 범위",
         },
+        // ── 간 ──
         {
-          type: "신장",
-          name: "Blood Urea",
-          min: 15,
-          max: 40,
-          unit: "mg/dL",
-          highRisk: "신부전, 탈수, 고단백 식사",
-          lowRisk: "정상 범위",
-        },
-
-        // 간 항목
-        {
-          type: "간",
+          grp: "간",
+          cat: "간수치",
           name: "ALT(GPT)",
           min: 7,
           max: 56,
           unit: "U/L",
-          highRisk: "간염 가능",
+          highRisk: "간염·지방간·약물성 간 손상",
           lowRisk: "정상 범위",
         },
         {
-          type: "간",
+          grp: "간",
+          cat: "간수치",
           name: "AST(GOT)",
           min: 10,
           max: 40,
           unit: "U/L",
-          highRisk: "간질환 가능",
+          highRisk: "간질환·심근경색·근육 손상",
           lowRisk: "정상 범위",
         },
         {
-          type: "간",
+          grp: "간",
+          cat: "간수치",
           name: "ALP",
           min: 44,
           max: 147,
           unit: "U/L",
-          highRisk: "간 질환 가능",
+          highRisk: "간·담도 질환·골질환",
           lowRisk: "골다공증 가능",
         },
         {
-          type: "간",
-          name: "GGT(감마-글루타밀 전이효소)",
+          grp: "간",
+          cat: "간수치",
+          name: "GGT",
           min: 9,
           max: 48,
           unit: "U/L",
-          highRisk:
-            "지방간으로 인한 상승/알콜성 간질환(간경화/간암 등)/췌장염 가능-> 초음파/섬유화 검사 필요",
+          highRisk: "지방간·알코올성 간질환·췌장염·담도 폐쇄",
           lowRisk: "정상 범위",
         },
         {
-          type: "간",
+          grp: "간",
+          cat: "간수치",
           name: "Bilirubin Total",
           min: 0.1,
           max: 1.2,
           unit: "mg/dL",
-          highRisk: "간질환 가능",
+          highRisk: "간질환·담도 폐쇄·용혈성 빈혈",
           lowRisk: "정상 범위",
         },
         {
-          type: "간",
-          name: "Albumin",
-          min: 3.5,
-          max: 5.0,
-          unit: "g/dL",
-          highRisk: "탈수 가능/소변량 감소, 색이 진함",
-          lowRisk: "간 질환 가능(복수 참)/부종(특히 다리, 발목)/근육약화",
-        },
-        {
-          type: "간",
-          name: "Total Protein",
-          min: 6.0,
-          max: 8.3,
-          unit: "g/dL",
-          highRisk: "탈수, 다발성 골수종(면역글로불린 증가), 만성 염증",
-          lowRisk: "영양 부족 가능/간질환,신장질환(단백 소실),갑상선기능항진증",
-        },
-        {
-          type: "간",
+          grp: "간",
+          cat: "간수치",
           name: "Direct Bilirubin",
           min: 0.0,
           max: 0.3,
           unit: "mg/dL",
-          highRisk: "간 담도 질환",
+          highRisk: "간 담도 질환·담즙 정체",
           lowRisk: "정상 범위",
         },
         {
-          type: "간",
+          grp: "간",
+          cat: "간수치",
           name: "Indirect Bilirubin",
           min: 0.1,
           max: 1.0,
           unit: "mg/dL",
-          highRisk: "용혈성 빈혈",
+          highRisk: "용혈성 빈혈·길버트 증후군",
           lowRisk: "정상 범위",
         },
         {
-          type: "간",
+          grp: "간",
+          cat: "간수치",
+          name: "Albumin",
+          min: 3.5,
+          max: 5.0,
+          unit: "g/dL",
+          highRisk: "탈수·혈액 농축",
+          lowRisk: "간 질환·영양 부족·신장 손실·부종",
+        },
+        {
+          grp: "간",
+          cat: "간수치",
+          name: "Total Protein",
+          min: 6.0,
+          max: 8.3,
+          unit: "g/dL",
+          highRisk: "탈수·다발성 골수종·만성 염증",
+          lowRisk: "영양 부족·간질환·신장질환(단백 소실)",
+        },
+        {
+          grp: "간",
+          cat: "간수치",
           name: "LDH",
           min: 140,
           max: 280,
           unit: "U/L",
-          highRisk: "조직 손상(심근경색, 간질환)",
+          highRisk: "조직 손상(심근경색·간질환·암)",
           lowRisk: "정상 범위",
         },
-
-        // 전해질 항목
+        // ── 전해질 ──
         {
-          type: "전해질",
+          grp: "전해질",
+          cat: "전해질",
           name: "Sodium",
           min: 135,
           max: 145,
           unit: "mEq/L",
-          highRisk: "고혈압 위험",
-          lowRisk: "탈수 가능",
+          highRisk: "고나트륨혈증·탈수·고혈압",
+          lowRisk: "저나트륨혈증·심부전·간경화·SIADH",
         },
         {
-          type: "전해질",
+          grp: "전해질",
+          cat: "전해질",
           name: "Potassium",
           min: 3.5,
           max: 5.1,
           unit: "mEq/L",
-          highRisk: "심장 부정맥 가능",
-          lowRisk: "근육 약화 가능",
+          highRisk: "고칼륨혈증·심장 부정맥 위험",
+          lowRisk: "저칼륨혈증·근육 약화·부정맥",
         },
         {
-          type: "전해질",
+          grp: "전해질",
+          cat: "전해질",
           name: "Chloride",
           min: 96,
           max: 106,
           unit: "mEq/L",
-          highRisk: "호흡기 질환 가능",
-          lowRisk: "탈수 가능",
+          highRisk: "고염소혈증·대사성 산증",
+          lowRisk: "저염소혈증·대사성 알칼리증",
         },
         {
-          type: "전해질",
+          grp: "전해질",
+          cat: "전해질",
           name: "Calcium",
           min: 8.5,
           max: 10.5,
           unit: "mg/dL",
-          highRisk: "고칼슘혈증 가능",
-          lowRisk: "저칼슘혈증 가능",
+          highRisk: "고칼슘혈증·부갑상선기능항진증·암",
+          lowRisk: "저칼슘혈증·부갑상선기능저하·비타민D 결핍",
         },
         {
-          type: "전해질",
+          grp: "전해질",
+          cat: "전해질",
           name: "Phosphorus",
           min: 2.5,
           max: 4.5,
           unit: "mg/dL",
-          highRisk: "신장 질환 가능",
-          lowRisk: "골다공증 가능",
+          highRisk: "신장 질환·부갑상선기능저하증",
+          lowRisk: "골다공증·영양 결핍·비타민D 결핍",
         },
         {
-          type: "전해질",
+          grp: "전해질",
+          cat: "전해질",
           name: "Magnesium",
           min: 1.7,
           max: 2.2,
           unit: "mg/dL",
-          highRisk: "신장 질환 가능",
-          lowRisk: "심장 질환 가능",
+          highRisk: "신장 질환",
+          lowRisk: "심장 질환·근육 경련·불면증",
         },
         {
-          type: "전해질",
+          grp: "전해질",
+          cat: "전해질",
           name: "Bicarbonate",
           min: 22,
           max: 29,
           unit: "mEq/L",
-          highRisk: "호흡기 질환",
-          lowRisk: "대사성 산증",
+          highRisk: "대사성 알칼리증",
+          lowRisk: "대사성 산증·신장 기능 저하",
         },
-
-        // 지질 항목
+        // ── 지질 ──
         {
-          type: "지질",
+          grp: "지질",
+          cat: "지질/콜레스테롤",
           name: "Total Cholesterol",
           min: 150,
           max: 200,
           unit: "mg/dL",
-          highRisk: "고지혈증 가능",
-          lowRisk: "정상 범위",
+          highRisk: "고지혈증·동맥경화·심혈관 질환",
+          lowRisk: "영양 불량·간 질환·갑상선기능항진증",
         },
         {
-          type: "지질",
+          grp: "지질",
+          cat: "지질/콜레스테롤",
           name: "LDL Cholesterol",
           min: 50,
           max: 100,
           unit: "mg/dL",
-          highRisk: "동맥경화/고지혈증 가능",
+          highRisk: "동맥경화·심혈관 질환 위험 증가",
           lowRisk: "정상 범위",
         },
         {
-          type: "지질",
+          grp: "지질",
+          cat: "지질/콜레스테롤",
           name: "HDL Cholesterol",
           min: 40,
           max: 60,
           unit: "mg/dL",
-          highRisk: "높을수록 심혈관질환 보호 효과; 위험요인 해당 없음",
-          lowRisk: "정상 범위",
+          highRisk: "(HDL은 높을수록 심혈관 보호)",
+          lowRisk: "심혈관 질환 위험 증가·동맥경화",
         },
         {
-          type: "지질",
+          grp: "지질",
+          cat: "지질/콜레스테롤",
           name: "Triglycerides",
           min: 50,
           max: 150,
           unit: "mg/dL",
-          highRisk: "심장 질환 가능",
+          highRisk: "심장 질환·췌장염 위험·대사증후군",
           lowRisk: "정상 범위",
         },
         {
-          type: "지질",
+          grp: "지질",
+          cat: "지질/콜레스테롤",
           name: "VLDL",
           min: 5,
           max: 40,
           unit: "mg/dL",
-          highRisk: "심장 질환 가능",
+          highRisk: "심장 질환·동맥경화",
           lowRisk: "정상 범위",
         },
-
-        // 당뇨 항목
+        // ── 당뇨 ──
         {
-          type: "당뇨",
+          grp: "당뇨",
+          cat: "당수치",
           name: "Fasting Blood Sugar",
           min: 70,
           max: 100,
           unit: "mg/dL",
-          highRisk: "고혈당: 당뇨병 또는 내당능장애 위험",
-          lowRisk: "저혈당: 인슐린과다분비; 부신기능저하 (현기증; 혼수 위험)",
+          highRisk: "당뇨병·내당능장애",
+          lowRisk: "저혈당·인슐린 과다·부신기능저하",
         },
         {
-          type: "당뇨",
+          grp: "당뇨",
+          cat: "당수치",
           name: "HbA1c",
           min: 4.0,
           max: 5.6,
           unit: "%",
-          highRisk: "당뇨병 가능",
+          highRisk: "당뇨병(6.5% 이상)·당뇨 전단계(5.7-6.4%)",
           lowRisk: "정상 범위",
         },
         {
-          type: "당뇨",
+          grp: "당뇨",
+          cat: "당수치",
           name: "Insulin",
           min: 2.6,
           max: 24.9,
           unit: "μU/mL",
-          highRisk: "인슐린 저항성 가능",
-          lowRisk: "저혈당 가능",
+          highRisk: "인슐린 저항성·PCOS·비만",
+          lowRisk: "저혈당·췌장 기능 저하",
         },
-
-        // 호르몬 항목
+        // ── 호르몬 ──
         {
-          type: "호르몬",
-          name: "TSH(갑상선자극호르몬)",
+          grp: "호르몬",
+          cat: "갑상선",
+          name: "TSH",
           min: 0.4,
           max: 4.0,
           unit: "μIU/mL",
-          highRisk: "갑상선 기능 저하 가능",
-          lowRisk: "갑상선기능항진증 또는 뇌하수체 기능저하 위험",
+          highRisk: "갑상선 기능 저하증",
+          lowRisk: "갑상선기능항진증·뇌하수체 기능저하",
         },
         {
-          type: "호르몬",
+          grp: "호르몬",
+          cat: "갑상선",
           name: "Free T4",
           min: 0.8,
           max: 1.8,
           unit: "ng/dL",
-          highRisk: "갑상선 기능 항진 가능",
-          lowRisk: "갑상선 기능 저하 가능",
+          highRisk: "갑상선 기능 항진증",
+          lowRisk: "갑상선 기능 저하증",
         },
         {
-          type: "호르몬",
+          grp: "호르몬",
+          cat: "갑상선",
+          name: "Free T3",
+          min: 2.3,
+          max: 4.2,
+          unit: "pg/mL",
+          highRisk: "갑상선 기능 항진증·T3 중독증",
+          lowRisk: "갑상선 기능 저하증",
+        },
+        {
+          grp: "호르몬",
+          cat: "기타",
           name: "Cortisol",
           min: 5,
           max: 25,
           unit: "μg/dL",
-          highRisk: "쿠싱 증후군 가능",
-          lowRisk: "애디슨병 가능",
+          highRisk: "쿠싱 증후군·만성 스트레스",
+          lowRisk: "애디슨병·부신 기능 부전",
         },
-
-        // 면역학 항목
+        // ── 면역학 ──
         {
-          type: "면역학",
+          grp: "면역학",
+          cat: "면역/염증",
           name: "IgG",
           min: 700,
           max: 1600,
           unit: "mg/dL",
-          highRisk: "만성 염증 가능",
-          lowRisk: "면역 결핍 가능",
+          highRisk: "만성 염증·다발성 골수종",
+          lowRisk: "면역 결핍",
         },
         {
-          type: "면역학",
+          grp: "면역학",
+          cat: "면역/염증",
           name: "IgA",
           min: 70,
           max: 400,
           unit: "mg/dL",
-          highRisk: "자가면역 질환 가능",
-          lowRisk: "면역 결핍 가능",
+          highRisk: "자가면역 질환·IgA 신병증",
+          lowRisk: "면역 결핍·선택적 IgA 결핍증",
         },
         {
-          type: "면역학",
+          grp: "면역학",
+          cat: "면역/염증",
           name: "IgM",
           min: 40,
           max: 230,
           unit: "mg/dL",
-          highRisk: "급성 감염 가능",
-          lowRisk: "면역 결핍 가능",
-        },
-
-        // 기타 항목 (철분 관련 항목 추가)
-        {
-          type: "기타(췌장/기타 면역,화학검사)",
-          name: "Vitamin D",
-          min: 30,
-          max: 100,
-          unit: "ng/mL",
-          highRisk: "과다 섭취 위험",
-          lowRisk: "골다공증 가능",
+          highRisk: "급성 감염·발덴스트롬 거대글로불린혈증",
+          lowRisk: "면역 결핍",
         },
         {
-          type: "기타(췌장/기타 면역,화학검사)",
-          name: "Folate(엽산)",
-          min: 3.1,
-          max: 17.5,
-          unit: "ng/mL",
-          highRisk: "일반적으로 무해",
-          lowRisk: "빈혈, 신경관 결손",
-        },
-        {
-          type: "기타(췌장/기타 면역,화학검사)",
-          name: "Vitamin B12",
-          min: 200,
-          max: 900,
-          unit: "pg/mL",
-          highRisk: "간질환, 백혈병",
-          lowRisk: "빈혈, 신경 손상",
-        },
-        {
-          type: "기타(췌장/기타 면역,화학검사)",
-          name: "Homocysteine",
-          min: 5,
-          max: 15,
-          unit: "μmol/L",
-          highRisk: "심혈관 질환 위험",
+          grp: "면역학",
+          cat: "면역/염증",
+          name: "CRP",
+          min: 0,
+          max: 3.0,
+          unit: "mg/L",
+          highRisk: "급성 염증·감염·심혈관 위험 증가",
           lowRisk: "정상 범위",
         },
         {
-          type: "기타(췌장/기타 면역,화학검사)",
+          grp: "면역학",
+          cat: "면역/염증",
+          name: "hs-CRP",
+          min: 0,
+          max: 1.0,
+          unit: "mg/L",
+          highRisk: "심혈관 위험·만성 염증",
+          lowRisk: "정상 범위",
+        },
+        // ── 췌장 ──
+        {
+          grp: "기타",
+          cat: "췌장수치",
           name: "Amylase",
           min: 25,
           max: 125,
           unit: "U/L",
-          highRisk: "급성 췌장염, 췌장암",
-          lowRisk: "췌장 기능 저하, 만성 췌장염",
+          highRisk: "급성 췌장염·췌장암·이하선염",
+          lowRisk: "만성 췌장염·췌장 기능 저하",
         },
         {
-          type: "기타(췌장/기타 면역,화학검사)",
+          grp: "기타",
+          cat: "췌장수치",
           name: "Lipase",
           min: 13,
           max: 60,
           unit: "U/L",
-          highRisk: "급성 췌장염, 췌장암",
-          lowRisk: "췌장 기능 저하",
+          highRisk: "급성 췌장염·췌장암",
+          lowRisk: "만성 췌장염·췌장 기능 저하",
         },
+        // ── 철분/빈혈 ──
         {
-          type: "기타(췌장/기타 면역,화학검사)",
-          name: "LDH",
-          min: 140,
-          max: 280,
-          unit: "U/L",
-          highRisk: "조직 손상(심근경색, 간질환)",
-          lowRisk: "정상 범위",
-        },
-        {
-          type: "기타(췌장/기타 면역,화학검사)",
-          name: "CK",
-          min: 38,
-          max: 174,
-          unit: "U/L",
-          highRisk: "근육 손상(심근경색, 횡문근융해증)",
-          lowRisk: "정상 범위",
-        },
-        // 철분 관련 항목 추가
-        {
-          type: "기타(췌장/기타 면역,화학검사)",
-          name: "Ferritin (남성)",
+          grp: "기타",
+          cat: "철분",
+          name: "Ferritin(남)",
           min: 24,
           max: 336,
           unit: "µg/L",
-          highRisk:
-            "Hemochromatosis, 간 질환, 염증성 질환, 악성 질환, 갑상샘기능항진증 - 장기 손상 및 사망률 증가 위험",
-          lowRisk:
-            "철 결핍성 빈혈, 임신 및 수유, 만성 출혈 또는 영양 결핍 - 피로, 어지럼증, 두통 등 빈혈 증상 및 면역력 저하",
+          highRisk: "혈색소증·간질환·염증성 질환·악성 종양",
+          lowRisk: "철 결핍성 빈혈·만성 출혈·영양 결핍",
         },
         {
-          type: "기타(췌장/기타 면역,화학검사)",
-          name: "Ferritin (여성)",
+          grp: "기타",
+          cat: "철분",
+          name: "Ferritin(여)",
           min: 11,
           max: 307,
           unit: "µg/L",
-          highRisk:
-            "Hemochromatosis, 간 질환, 염증성 질환, 악성 질환, 갑상샘기능항진증 - 장기 손상 및 사망률 증가 위험",
-          lowRisk:
-            "철 결핍성 빈혈, 임신 및 수유, 만성 출혈 또는 영양 결핍 - 피로, 어지럼증, 두통 등 빈혈 증상 및 면역력 저하",
+          highRisk: "혈색소증·간질환·염증",
+          lowRisk: "철 결핍성 빈혈·임신·수유·만성 출혈",
         },
         {
-          type: "기타(췌장/기타 면역,화학검사)",
+          grp: "기타",
+          cat: "철분",
           name: "Iron",
           min: 50,
           max: 160,
           unit: "µg/dL",
-          highRisk: "철 과잉 상태, 간 질환, 급성 염증 - 장기 손상 위험",
-          lowRisk:
-            "철 결핍성 빈혈, 만성 질환, 영양 결핍 - 피로, 어지럼증, 두통, 면역력 저하",
+          highRisk: "철 과잉·간 질환·급성 염증",
+          lowRisk: "철 결핍성 빈혈·만성 질환·영양 결핍",
         },
         {
-          type: "기타(췌장/기타 면역,화학검사)",
+          grp: "기타",
+          cat: "철분",
           name: "TIBC",
           min: 250,
           max: 450,
           unit: "µg/dL",
-          highRisk:
-            "철 결핍성 빈혈, 임신, 급성 염증 - 철 결합 능력 증가로 인한 철 결핍 증상/장기적인 철 결핍은 심혈관 건강에 악영향",
-          lowRisk:
-            "철 과잉 상태, 간 질환, 영양 과잉(간 손상, 당뇨병, 심부전 위험 증가)",
+          highRisk: "철 결핍성 빈혈·임신(철 결핍 증상)",
+          lowRisk: "철 과잉·간 질환(간 손상·당뇨·심부전 위험)",
         },
         {
-          type: "기타(췌장/기타 면역,화학검사)",
+          grp: "기타",
+          cat: "철분",
           name: "Transferrin",
           min: 200,
           max: 360,
           unit: "mg/dL",
-          highRisk:
-            "철 결핍성 빈혈, 임신, 급성 염증 - 철 운반 단백질 증가로 인한 철 결핍 증상",
-          lowRisk:
-            "철 과잉으로 인한 산화 스트레스 및 장기 손상/염증 반응 악화: CRP 및 IL-6 상승과 연관",
+          highRisk: "철 결핍성 빈혈·임신",
+          lowRisk: "철 과잉·산화 스트레스·CRP 상승 연관",
+        },
+        // ── 비타민/영양 ──
+        {
+          grp: "기타",
+          cat: "비타민/영양",
+          name: "Vitamin D",
+          min: 30,
+          max: 100,
+          unit: "ng/mL",
+          highRisk: "과다 섭취(150 이상 독성)",
+          lowRisk: "골다공증·면역 저하·만성 염증 악화",
+        },
+        {
+          grp: "기타",
+          cat: "비타민/영양",
+          name: "Vitamin B12",
+          min: 200,
+          max: 900,
+          unit: "pg/mL",
+          highRisk: "간질환·백혈병·다발성 골수종",
+          lowRisk: "빈혈·신경 손상·메틸화 장애",
+        },
+        {
+          grp: "기타",
+          cat: "비타민/영양",
+          name: "Folate",
+          min: 3.1,
+          max: 17.5,
+          unit: "ng/mL",
+          highRisk: "일반적으로 무해",
+          lowRisk: "빈혈·신경관 결손·메틸화 장애",
+        },
+        {
+          grp: "기타",
+          cat: "비타민/영양",
+          name: "Homocysteine",
+          min: 5,
+          max: 15,
+          unit: "μmol/L",
+          highRisk: "심혈관 질환·신장 손상·메틸화 장애",
+          lowRisk: "정상 범위",
+        },
+        {
+          grp: "기타",
+          cat: "비타민/영양",
+          name: "Zinc",
+          min: 70,
+          max: 120,
+          unit: "µg/dL",
+          highRisk: "아연 과잉·동 결핍",
+          lowRisk: "면역 저하·상처 회복 지연·성장 장애",
+        },
+        // ── 기타 ──
+        {
+          grp: "기타",
+          cat: "기타",
+          name: "CK",
+          min: 38,
+          max: 174,
+          unit: "U/L",
+          highRisk: "근육 손상·심근경색·횡문근융해증",
+          lowRisk: "정상 범위",
+        },
+        {
+          grp: "기타",
+          cat: "기타",
+          name: "Procalcitonin",
+          min: 0,
+          max: 0.1,
+          unit: "ng/mL",
+          highRisk: "세균 감염·패혈증 위험",
+          lowRisk: "정상 범위",
+        },
+        {
+          grp: "기타",
+          cat: "기타",
+          name: "Fibrinogen",
+          min: 200,
+          max: 400,
+          unit: "mg/dL",
+          highRisk: "혈전 위험·염증·심혈관 질환",
+          lowRisk: "출혈 위험·간 기능 저하",
+        },
+        {
+          grp: "기타",
+          cat: "기타",
+          name: "PT/INR",
+          min: 0.8,
+          max: 1.2,
+          unit: "INR",
+          highRisk: "응고 장애·간 질환·항응고제 과다",
+          lowRisk: "혈전 위험",
         },
       ];
 
-      function filterTests() {
-        const type = document.getElementById("typeSelect").value;
-        const tableBody = document.querySelector("#bloodTestTable tbody");
-        tableBody.innerHTML = "";
+      // ── INSIGHT RULES (50+ 의학 연결고리) ──
+      const INSIGHT_RULES = [
+        // 빈혈
+        {
+          id: "iron_def_anemia",
+          tags: ["빈혈", "철분"],
+          severity: "critical",
+          title: "철 결핍성 빈혈 고위험",
+          cond: (v) =>
+            v("Ferritin(남)") < 30 || v("Ferritin(여)") < 15 || v("Iron") < 50,
+          related: [
+            "RBC",
+            "Hemoglobin",
+            "Hematocrit",
+            "MCV",
+            "MCH",
+            "Ferritin(남)",
+            "Ferritin(여)",
+            "Iron",
+            "TIBC",
+            "Transferrin",
+          ],
+          body: "Ferritin < 30 또는 Iron < 50이면서 빈혈 수치(Hb, RBC)가 낮은 경우 철 결핍성 빈혈 고위험. 철분 흡수 장애(소화기 질환) 또는 만성 출혈(위장관·월경 과다)을 확인하세요.",
+          strategy:
+            "철분이 풍부한 음식(붉은 고기·간·시금치), 비타민C와 함께 섭취, 제산제·커피와의 동시 섭취 피하기",
+        },
+        {
+          id: "b12_folate_anemia",
+          tags: ["빈혈", "비타민"],
+          severity: "warning",
+          title: "거대적혈구성 빈혈 의심 (B12/엽산 결핍)",
+          cond: (v) =>
+            v("MCV") > 100 && (v("Vitamin B12") < 200 || v("Folate") < 3.1),
+          related: [
+            "MCV",
+            "MCH",
+            "Hemoglobin",
+            "Vitamin B12",
+            "Folate",
+            "Homocysteine",
+          ],
+          body: "MCV > 100 + B12/엽산 저하 → 거대적혈구성 빈혈. 채식주의자·위절제술 후·노인에서 흔히 발생.",
+          strategy:
+            "B12(동물성 단백질·생선·달걀), 엽산(잎채소·콩류), 필요 시 주사제 보충",
+        },
+        {
+          id: "methylation_disorder",
+          tags: ["비타민", "심혈관"],
+          severity: "warning",
+          title: "메틸화 장애 의심",
+          cond: (v) =>
+            v("Homocysteine") > 15 &&
+            (v("Vitamin B12") < 300 || v("Folate") < 5),
+          related: ["Homocysteine", "Vitamin B12", "Folate", "CRP"],
+          body: "Homocysteine↑ + B12↓ + Folate↓ → 메틸화 장애. 심혈관 질환·신경 손상·인지 기능 저하 위험.",
+          strategy:
+            "메틸B12, 5-MTHF 엽산 보충제, 엽산 풍부 식품(브로콜리·콩류·아보카도)",
+        },
+        // 간
+        {
+          id: "fatty_liver",
+          tags: ["간", "대사"],
+          severity: "warning",
+          title: "지방간 가능성",
+          cond: (v) =>
+            (v("ALT(GPT)") > 56 || v("AST(GOT)") > 40) && v("GGT") > 48,
+          related: [
+            "ALT(GPT)",
+            "AST(GOT)",
+            "GGT",
+            "ALP",
+            "Triglycerides",
+            "Fasting Blood Sugar",
+          ],
+          body: "ALT↑ + GGT↑ 조합은 지방간(NAFLD) 또는 알코올성 간질환의 전형적 패턴. 중성지방·공복혈당도 같이 확인.",
+          strategy:
+            "알코올 제한, 정제 탄수화물·설탕 감소, 체중 감량 5-10%, 오메가3 섭취",
+        },
+        {
+          id: "liver_damage",
+          tags: ["간"],
+          severity: "critical",
+          title: "간 손상 고위험",
+          cond: (v) => v("ALT(GPT)") > 100 || v("AST(GOT)") > 80,
+          related: [
+            "ALT(GPT)",
+            "AST(GOT)",
+            "ALP",
+            "GGT",
+            "Bilirubin Total",
+            "Albumin",
+            "PT/INR",
+          ],
+          body: "ALT/AST 기준치의 2배 이상 상승은 간세포 손상의 명확한 신호. 즉각적인 전문의 상담 필요.",
+          strategy: "즉각 금주·간독성 약물 중단·전문의 상담 필수",
+        },
+        // 췌장
+        {
+          id: "pancreatitis_risk",
+          tags: ["췌장"],
+          severity: "critical",
+          title: "급성 췌장염 위험",
+          cond: (v) => v("Amylase") > 125 || v("Lipase") > 60,
+          related: ["Amylase", "Lipase", "GGT", "Triglycerides", "Calcium"],
+          body: "Amylase/Lipase 상승은 급성 췌장염의 핵심 지표. 중성지방 고수치 또는 담석과 연관된 경우 많음.",
+          strategy:
+            "즉각 금식·금주, 저지방식 엄격 준수, 소화효소제 보충, 전문의 상담 필수",
+        },
+        {
+          id: "chronic_pancreas",
+          tags: ["췌장"],
+          severity: "warning",
+          title: "만성 췌장염 기능 저하",
+          cond: (v) =>
+            v("Amylase") > 0 &&
+            v("Amylase") < 25 &&
+            v("Lipase") > 0 &&
+            v("Lipase") < 13,
+          related: ["Amylase", "Lipase", "Fasting Blood Sugar", "Vitamin D"],
+          body: "Amylase/Lipase 저하는 만성 췌장염 외분비 기능 소진의 신호. 지방 흡수 불량·지용성 비타민 결핍 동반 가능.",
+          strategy:
+            "소화효소 보충제(의사 처방), 저지방 고단백식, 지용성 비타민(A·D·E·K) 보충",
+        },
+        // 당뇨/대사
+        {
+          id: "diabetes_risk",
+          tags: ["당뇨", "대사"],
+          severity: "critical",
+          title: "당뇨병 또는 당뇨 전단계",
+          cond: (v) => v("Fasting Blood Sugar") > 100 || v("HbA1c") > 5.6,
+          related: [
+            "Fasting Blood Sugar",
+            "HbA1c",
+            "Insulin",
+            "Triglycerides",
+            "HDL Cholesterol",
+          ],
+          body: "공복혈당 > 100 또는 HbA1c > 5.6% → 당뇨 전단계. > 126/6.5%이면 당뇨병. 중성지방 상승·HDL 감소와 함께 대사증후군 패턴 확인.",
+          strategy:
+            "정제 탄수화물 제한, 혈당지수 낮은 음식, 유산소 운동 주 150분, 체중 감량",
+        },
+        {
+          id: "insulin_resistance",
+          tags: ["당뇨", "대사"],
+          severity: "warning",
+          title: "인슐린 저항성 의심",
+          cond: (v) => v("Insulin") > 24.9 && v("Triglycerides") > 150,
+          related: [
+            "Insulin",
+            "Fasting Blood Sugar",
+            "HbA1c",
+            "Triglycerides",
+            "HDL Cholesterol",
+            "Uric Acid",
+          ],
+          body: "인슐린 고수치 + 중성지방 상승 → 인슐린 저항성·대사증후군. 요산 상승도 동반 시 통풍 위험.",
+          strategy:
+            "저당·저탄수 식단, 간헐적 단식 고려, 규칙적 운동, 마그네슘 보충",
+        },
+        // 갑상선
+        {
+          id: "hypothyroid",
+          tags: ["갑상선", "호르몬"],
+          severity: "warning",
+          title: "갑상선 기능 저하증",
+          cond: (v) => v("TSH") > 4.0 && v("Free T4") < 0.8,
+          related: [
+            "TSH",
+            "Free T4",
+            "Free T3",
+            "Cholesterol",
+            "Hemoglobin",
+            "CRP",
+          ],
+          body: "TSH↑ + fT4↓ → 갑상선 기능 저하. 콜레스테롤 상승·빈혈·냉증·피로·체중 증가 동반 가능.",
+          strategy:
+            "갑상선 호르몬 대체요법(전문의 처방), 요오드·셀레늄 함유 식품(미역·해산물)",
+        },
+        {
+          id: "hyperthyroid",
+          tags: ["갑상선", "호르몬"],
+          severity: "warning",
+          title: "갑상선 기능 항진증",
+          cond: (v) => v("TSH") < 0.4 && v("Free T4") > 1.8,
+          related: ["TSH", "Free T4", "Free T3", "Calcium", "Albumin"],
+          body: "TSH↓ + fT4↑ → 갑상선 기능 항진. 심계항진·체중 감소·골다공증 위험.",
+          strategy:
+            "방사성 요오드 치료 또는 항갑상선제(전문의 처방), 카페인·자극적 음식 피하기",
+        },
+        // 심혈관
+        {
+          id: "cardiovascular_risk",
+          tags: ["심혈관", "지질"],
+          severity: "warning",
+          title: "심혈관 위험 증가",
+          cond: (v) =>
+            v("LDL Cholesterol") > 130 || v("Total Cholesterol") > 200,
+          related: [
+            "Total Cholesterol",
+            "LDL Cholesterol",
+            "HDL Cholesterol",
+            "Triglycerides",
+            "hs-CRP",
+            "Homocysteine",
+          ],
+          body: "LDL > 130 또는 총 콜레스테롤 > 200. CRP·호모시스테인 동반 상승 시 심혈관 위험 배가.",
+          strategy:
+            "포화지방·트랜스지방 감소, 식이섬유(귀리·콩류), 오메가3, 스타틴 고려(전문의)",
+        },
+        {
+          id: "pancreatitis_triglycerides",
+          tags: ["췌장", "지질"],
+          severity: "critical",
+          title: "고중성지방 → 췌장염 위험",
+          cond: (v) => v("Triglycerides") > 500,
+          related: [
+            "Triglycerides",
+            "Amylase",
+            "Lipase",
+            "Fasting Blood Sugar",
+          ],
+          body: "중성지방 > 500 mg/dL는 급성 췌장염의 독립적 위험 인자. 즉각 치료 필요.",
+          strategy: "즉각 금식·금주, 오메가3 고용량, 피브레이트계 약물(전문의)",
+        },
+        // 신장
+        {
+          id: "kidney_disease",
+          tags: ["신장"],
+          severity: "warning",
+          title: "신장 기능 저하",
+          cond: (v) =>
+            v("Creatinine") > 1.3 ||
+            v("GFR") < 60 ||
+            (v("BUN") > 20 && v("Creatinine") > 1.1),
+          related: [
+            "BUN",
+            "Creatinine",
+            "GFR",
+            "Cystatin C",
+            "Potassium",
+            "Phosphorus",
+            "Albumin",
+          ],
+          body: "크레아티닌 상승 + GFR 감소 → 신장 기능 저하. 칼륨·인 상승도 동반 시 만성 신부전 진행 가능.",
+          strategy:
+            "단백질 섭취 조절, 저염식, 혈압 관리, 신독성 약물 주의, 신장 전문의 상담",
+        },
+        // 염증
+        {
+          id: "chronic_inflammation",
+          tags: ["염증", "면역"],
+          severity: "warning",
+          title: "만성 염증 + 면역 저하",
+          cond: (v) => (v("CRP") > 3 || v("hs-CRP") > 1) && v("Vitamin D") < 20,
+          related: ["CRP", "hs-CRP", "Vitamin D", "WBC", "ESR", "Albumin"],
+          body: "CRP > 3 + 비타민D < 20 → 만성 염증 + 면역 저하. 비타민D 결핍은 염증 완화 능력을 저하시킴.",
+          strategy:
+            "비타민D 보충(2000-4000 IU/일), 항염 식품(강황·생강·오메가3), 햇빛 노출",
+        },
+        {
+          id: "vitd_low",
+          tags: ["비타민", "면역", "염증"],
+          severity: "warning",
+          title: "비타민D 결핍",
+          cond: (v) => v("Vitamin D") > 0 && v("Vitamin D") < 30,
+          related: [
+            "Vitamin D",
+            "Calcium",
+            "Phosphorus",
+            "CRP",
+            "IgG",
+            "Hemoglobin",
+          ],
+          body: "비타민D < 30 ng/mL → 골다공증·면역 저하·만성 염증·우울증·근육 약화 위험.",
+          strategy:
+            "비타민D3 보충제(2000-5000 IU/일), 연어·고등어·달걀노른자, 햇볕 15분/일",
+        },
+        // 단백질/영양
+        {
+          id: "malnutrition",
+          tags: ["영양", "간"],
+          severity: "warning",
+          title: "영양 불량 의심",
+          cond: (v) => v("Albumin") < 3.5 || v("Total Protein") < 6.0,
+          related: ["Albumin", "Total Protein", "Hemoglobin", "Lymphocytes"],
+          body: "알부민 < 3.5 → 영양 불량 또는 간 기능 저하. 수술·감염 회복력 저하와 직결.",
+          strategy:
+            "양질의 단백질(생선·달걀·두부), 총 칼로리 충분 섭취, 필요 시 경장영양",
+        },
+        // 통풍
+        {
+          id: "gout_risk",
+          tags: ["신장", "대사"],
+          severity: "warning",
+          title: "통풍 위험",
+          cond: (v) => v("Uric Acid") > 7.0,
+          related: [
+            "Uric Acid",
+            "Creatinine",
+            "Triglycerides",
+            "Fasting Blood Sugar",
+          ],
+          body: "요산 > 7.0 mg/dL → 통풍 결정 형성 위험. 신장 결석·신부전 진행 가능.",
+          strategy:
+            "퓨린 낮은 음식(붉은 고기·내장·맥주 제한), 수분 충분 섭취, 알로퓨리놀(전문의)",
+        },
+        // 골다공증
+        {
+          id: "osteoporosis_risk",
+          tags: ["뼈", "비타민"],
+          severity: "warning",
+          title: "골다공증 위험",
+          cond: (v) =>
+            (v("Calcium") < 8.5 || v("Vitamin D") < 20) && v("ALP") > 147,
+          related: ["Calcium", "Phosphorus", "Vitamin D", "ALP", "Albumin"],
+          body: "저칼슘 + 비타민D 결핍 + ALP 상승 → 뼈 대사 이상·골다공증 위험.",
+          strategy:
+            "칼슘(유제품·뼈째 먹는 생선), 비타민D 보충, 체중부하 운동, DEXA 검사 권장",
+        },
+        // 면역 저하
+        {
+          id: "immune_deficiency",
+          tags: ["면역"],
+          severity: "warning",
+          title: "면역 기능 저하",
+          cond: (v) =>
+            v("Lymphocytes") > 0 &&
+            v("Lymphocytes") < 20 &&
+            (v("IgG") < 700 || v("IgM") < 40),
+          related: [
+            "WBC",
+            "Lymphocytes",
+            "IgG",
+            "IgA",
+            "IgM",
+            "Vitamin D",
+            "Zinc",
+          ],
+          body: "림프구 감소 + IgG/IgM 저하 → 면역력 저하. 반복 감염·상처 회복 지연·암 위험.",
+          strategy:
+            "비타민D·아연 보충, 프로바이오틱스, 규칙적 운동·충분한 수면",
+        },
+        // 혈액 응고
+        {
+          id: "coagulation_risk",
+          tags: ["혈액"],
+          severity: "warning",
+          title: "혈액 응고 이상",
+          cond: (v) =>
+            v("PT/INR") > 1.2 || (v("Platelets") > 0 && v("Platelets") < 100),
+          related: ["PT/INR", "Platelets", "Fibrinogen", "Albumin", "ALT(GPT)"],
+          body: "PT/INR 상승 또는 혈소판 감소 → 출혈 위험. 간 기능 저하와 연관 많음.",
+          strategy:
+            "간 기능 평가, 항응고제 복용 중이면 전문의 상담, 비타민K 함유 식품 균형",
+        },
+        // 스트레스/부신
+        {
+          id: "cortisol_high",
+          tags: ["호르몬", "스트레스"],
+          severity: "warning",
+          title: "코르티솔 과다 (쿠싱 증후군 의심)",
+          cond: (v) => v("Cortisol") > 25,
+          related: [
+            "Cortisol",
+            "Fasting Blood Sugar",
+            "Calcium",
+            "Albumin",
+            "Potassium",
+          ],
+          body: "코르티솔 과다 → 혈당 상승·뼈 손실·근육 위축·면역 저하·고혈압. 쿠싱 증후군 또는 만성 스트레스.",
+          strategy:
+            "스트레스 관리(명상·요가), 수면 개선, 카페인 제한, 전문의 평가",
+        },
+      ];
 
-        const filteredTests = bloodTests.filter(
-          (test) => type === "all" || test.type === type
+      // ── STRATEGY DB ──
+      const STRATEGIES = {
+        "빈혈/혈액": {
+          icon: "🩸",
+          title: "빈혈 및 혈액 수치 정상화",
+          body: "철 결핍성 빈혈이 가장 흔함. 적혈구 생성을 위해 철분·B12·엽산·비타민C가 필요.",
+          foods_good: [
+            { n: "소고기 간", d: "헴철 최고 공급원, 흡수율 30-40%" },
+            { n: "시금치", d: "비헴철 + 엽산, 비타민C와 함께 섭취" },
+            { n: "굴·조개", d: "철분·아연·B12 동시 공급" },
+            { n: "두부·렌틸콩", d: "식물성 철분, 비타민C 식품과 함께" },
+            { n: "달걀·연어", d: "B12·철분·단백질 균형 공급" },
+          ],
+          foods_bad: [
+            { n: "커피·홍차", d: "탄닌이 철분 흡수 50% 저하" },
+            { n: "제산제·유제품", d: "철분과 동시 복용 시 흡수 방해" },
+            { n: "고섬유 식품 과다", d: "피틴산이 철분 킬레이트" },
+            { n: "알코올", d: "엽산·B12 흡수 저해" },
+          ],
+          exercise:
+            "저강도 유산소(걷기·수영) 권장. 빈혈 심한 경우 과격한 운동 금지. 호흡 곤란 시 즉시 중단.",
+          lifestyle:
+            "충분한 수면(7-8시간), 철분제는 공복에 복용, 비타민C 음료와 함께 복용 효과적.",
+        },
+        간수치: {
+          icon: "🫀",
+          title: "간 수치 정상화 전략",
+          body: "간은 침묵의 장기. ALT/AST 상승은 간세포 손상 신호. 조기 대응이 핵심.",
+          foods_good: [
+            { n: "강황 (커큐민)", d: "강력한 항염·간 보호 효과" },
+            { n: "브로콜리·양배추", d: "글루타치온 생성 촉진, 간 해독" },
+            { n: "아보카도", d: "글루타치온·비타민E, 간 지방 축적 억제" },
+            { n: "커피 (블랙)", d: "하루 2-3잔이 간경변 위험 40% 감소" },
+            { n: "마늘", d: "황화알릴이 간 효소 활성화" },
+          ],
+          foods_bad: [
+            { n: "알코올", d: "간세포 직접 독성, 즉각 중단 필수" },
+            { n: "고과당 옥수수시럽", d: "지방간 촉진, 청량음료 주의" },
+            { n: "포화지방·튀김", d: "간 지방 축적 악화" },
+            { n: "아세트아미노펜", d: "간 독성, 복용량 엄격 준수" },
+          ],
+          exercise:
+            "주 3-5회 유산소 30분. 체중 5-10% 감량 시 간 지방 40% 감소.",
+          lifestyle:
+            "금주·절주 절대 필수. 간독성 약물(일부 진통제·항생제) 최소화. 정기적 복부 초음파.",
+        },
+        췌장수치: {
+          icon: "🔬",
+          title: "췌장 수치 정상화 전략",
+          body: "췌장은 인슐린 분비 + 소화효소 분비 이중 역할. 급성 악화 시 즉각 금식 필요.",
+          foods_good: [
+            { n: "흰쌀죽·미음", d: "췌장 효소 분비 최소화, 회복기 최우선" },
+            { n: "두부·계란 흰자", d: "저지방 고단백, 췌장 부담 최소" },
+            { n: "브로콜리·당근", d: "항산화 물질로 췌장 염증 완화" },
+            { n: "블루베리", d: "폴리페놀이 췌장 세포 보호" },
+            { n: "생강차", d: "항염·소화 촉진, 췌장 자극 최소" },
+          ],
+          foods_bad: [
+            { n: "삼겹살·버터·튀김", d: "고지방이 췌장 효소 과다 분비 유발" },
+            { n: "알코올", d: "췌장 세포 직접 독성, 절대 금지" },
+            { n: "탄산음료·단 음식", d: "혈당 급등 → 인슐린 부하" },
+            { n: "라면·가공식품", d: "나트륨·인스턴트 지방 복합 자극" },
+          ],
+          exercise:
+            "급성기 절대 안정. 회복 후 가벼운 걷기부터 시작. 과격한 운동은 췌장 혈류 변화 유발.",
+          lifestyle:
+            "소식 다회(하루 5-6회 소량), 금주·금연 절대 필수, 소화효소제 처방받기.",
+        },
+        당수치: {
+          icon: "🍬",
+          title: "혈당 수치 정상화 전략",
+          body: "공복혈당·HbA1c 관리가 당뇨 예방의 핵심. 식후 혈당 스파이크 최소화.",
+          foods_good: [
+            { n: "현미·귀리", d: "저혈당지수, 식이섬유 풍부" },
+            { n: "연어·고등어", d: "오메가3가 인슐린 감수성 개선" },
+            { n: "견과류(소량)", d: "혈당 안정화, 불포화지방산" },
+            { n: "계피", d: "혈당 강하 효과, 차나 요리에 활용" },
+            { n: "녹잎 채소", d: "마그네슘 풍부, 인슐린 기능 지원" },
+          ],
+          foods_bad: [
+            { n: "흰빵·흰쌀·설탕", d: "혈당 급등 주범" },
+            { n: "과일주스·청량음료", d: "액상 과당으로 즉각 혈당 상승" },
+            { n: "감자·옥수수", d: "고혈당지수 음식" },
+            { n: "알코올", d: "저혈당 및 고혈당 불규칙 유발" },
+          ],
+          exercise:
+            "식후 30분 걷기(혈당 15-20% 감소), 저항성 운동 주 2-3회(근육이 혈당 소비).",
+          lifestyle:
+            "식사 순서(채소→단백질→탄수화물), 규칙적 혈당 측정, 충분한 수면(부족 시 혈당 조절 장애).",
+        },
+        신장수치: {
+          icon: "🫘",
+          title: "신장 수치 정상화 전략",
+          body: "GFR 60 미만이면 만성 신부전. 단백질·칼륨·인·나트륨 관리가 핵심.",
+          foods_good: [
+            { n: "흰쌀·백빵", d: "인·칼륨 낮아 신장 부담 적음" },
+            { n: "계란 흰자", d: "고단백 저인, 신장 환자 최적 단백질" },
+            { n: "사과·배", d: "칼륨 낮은 과일" },
+            { n: "양배추·콜리플라워", d: "칼륨·인 낮은 채소" },
+            { n: "올리브오일", d: "항염·신장 보호" },
+          ],
+          foods_bad: [
+            {
+              n: "바나나·오렌지·감자",
+              d: "고칼륨, 신부전 시 심장 부정맥 위험",
+            },
+            { n: "유제품·콩류", d: "고인, 신부전 시 뼈·혈관 석회화" },
+            { n: "가공육·라면", d: "고나트륨, 신장 과부하" },
+            { n: "붉은 고기 과다", d: "BUN 상승, 신장 부담 증가" },
+          ],
+          exercise:
+            "저강도 유산소(걷기·수영), 신부전 중증 시 전문의 상담 후 결정.",
+          lifestyle:
+            "수분 섭취량 조절(전문의 지시에 따라), 혈압 관리(ACE 억제제), 정기 신장 기능 검사.",
+        },
+        "지질/콜레스테롤": {
+          icon: "💛",
+          title: "콜레스테롤 정상화 전략",
+          body: "LDL 낮추기 + HDL 높이기 + 중성지방 감소가 목표.",
+          foods_good: [
+            { n: "귀리·보리", d: "베타글루칸이 LDL 10-15% 감소" },
+            { n: "견과류(호두·아몬드)", d: "불포화지방산으로 HDL 상승" },
+            { n: "올리브오일", d: "단불포화지방산으로 LDL 감소" },
+            { n: "등푸른 생선", d: "오메가3가 중성지방 25-30% 감소" },
+            { n: "콩류(두부·렌틸)", d: "식물성 단백질+이소플라본 LDL 감소" },
+          ],
+          foods_bad: [
+            { n: "삼겹살·버터·치즈", d: "포화지방이 LDL 직접 상승" },
+            { n: "마가린·패스트푸드", d: "트랜스지방이 LDL 올리고 HDL 낮춤" },
+            { n: "알코올", d: "중성지방 즉각 상승" },
+            { n: "설탕·흰쌀·흰빵", d: "중성지방 상승, HDL 감소" },
+          ],
+          exercise: "유산소 운동이 HDL 5-10% 상승. 주 5회 30분 이상 권장.",
+          lifestyle:
+            "금연(HDL 10% 상승 효과), 체중 감량, 스타틴 적응증 해당 시 전문의 상담.",
+        },
+        "면역/염증": {
+          icon: "🛡️",
+          title: "면역력·염증 개선 전략",
+          body: "만성 저등급 염증(CRP 1-3)은 모든 만성 질환의 공통 기반. 항염 생활습관 핵심.",
+          foods_good: [
+            { n: "강황+흑후추", d: "커큐민 흡수 2000% 증가, 강력 항염" },
+            { n: "블루베리·딸기", d: "안토시아닌이 CRP 20% 감소" },
+            { n: "마늘·양파", d: "퀘르세틴·황화합물로 면역 강화" },
+            { n: "요구르트·김치", d: "프로바이오틱스로 장-면역 축 강화" },
+            { n: "녹차", d: "카테킨이 항염·항산화" },
+          ],
+          foods_bad: [
+            { n: "정제 탄수화물·설탕", d: "인슐린 급등 → 염증 신호물질 증가" },
+            { n: "오메가6 과다(식용유)", d: "아라키돈산으로 염증 촉진" },
+            { n: "알코올", d: "장내 세균총 파괴·면역 억제" },
+            { n: "가공육·색소", d: "AGEs 생성으로 만성 염증" },
+          ],
+          exercise:
+            "중강도 운동이 항염 효과. 과도한 운동(마라톤 직후)은 일시적 면역 억제.",
+          lifestyle:
+            "수면 7-9시간(부족 시 CRP 상승), 스트레스 관리, 비타민D 충분 유지.",
+        },
+        갑상선: {
+          icon: "🦋",
+          title: "갑상선 기능 개선 전략",
+          body: "갑상선 기능 저하가 더 흔함. 요오드·셀레늄·아연이 갑상선 호르몬 합성에 필수.",
+          foods_good: [
+            { n: "미역·다시마", d: "요오드 풍부, 갑상선 호르몬 원료" },
+            {
+              n: "브라질너트(1-2개)",
+              d: "셀레늄 최고 공급원, 갑상선 효소 활성",
+            },
+            { n: "달걀", d: "요오드+셀레늄+아연 복합 공급" },
+            { n: "연어·참치", d: "오메가3+셀레늄+비타민D" },
+            {
+              n: "아연 풍부 음식(굴·호박씨)",
+              d: "갑상선 호르몬 전환 효소 지원",
+            },
+          ],
+          foods_bad: [
+            {
+              n: "생 배추·브로콜리 과다",
+              d: "생식 시 갑상선 호르몬 억제(조리하면 안전)",
+            },
+            { n: "대두 단백질 과다", d: "갑상선 약물 흡수 방해" },
+            { n: "글루텐(하시모토 환자)", d: "자가항체 자극 가능성" },
+            { n: "정제 설탕", d: "갑상선 면역 반응 악화" },
+          ],
+          exercise:
+            "기능 저하 시 저강도 운동부터 시작. 피로가 심한 경우 무리 금지.",
+          lifestyle:
+            "갑상선 약은 공복에 복용, 철분제·칼슘제와 4시간 간격 유지.",
+        },
+        철분: {
+          icon: "🔩",
+          title: "철분 수치 최적화 전략",
+          body: "Ferritin < 30이면 저장철 부족. 증상 없어도 치료 필요.",
+          foods_good: [
+            { n: "소간·돼지간", d: "헴철 최고 농도, 100g당 6mg" },
+            { n: "굴·대합·홍합", d: "헴철 + B12 동시 보충" },
+            { n: "쇠고기 살코기", d: "헴철 흡수율 20-30%" },
+            { n: "시금치 + 레몬즙", d: "비헴철 + 비타민C로 흡수 3배 증가" },
+            { n: "두부·콩", d: "식물성 철분, 비타민C와 함께" },
+          ],
+          foods_bad: [
+            { n: "커피·홍차(식사 직후)", d: "탄닌이 철분 흡수 60% 감소" },
+            { n: "우유·치즈", d: "칼슘이 철분 흡수 경쟁" },
+            { n: "통곡물 과다", d: "피틴산이 철 킬레이트" },
+          ],
+          exercise:
+            "극심한 빈혈(Hb < 8) 시 운동 금지. 경도 빈혈 시 가벼운 걷기 가능.",
+          lifestyle:
+            "철분제는 공복 복용, 비타민C 음료와 함께, 제산제와 2시간 간격. 6개월 후 재검.",
+        },
+      };
+
+      // ══════════════════════════════════════════════════════════════
+      //  APP STATE
+      // ══════════════════════════════════════════════════════════════
+      const KEY = "blood_v1";
+      let db = {
+        patient: {
+          name: "",
+          birth: "",
+          gender: "남",
+          blood: "모름",
+          height: "",
+          weight: "",
+          bpS: "",
+          bpD: "",
+          fbs: "",
+          smoke: "비흡연",
+          meds: "",
+          disease: "",
+          memo: "",
+          familyHistory: [],
+        },
+        records: [],
+        customEvals: {}, // { testName: { highRisk, lowRisk, min, max } }
+      };
+      let charts = {};
+      let editingRecordIdx = null;
+
+      function persist() {
+        localStorage.setItem(KEY, JSON.stringify(db));
+      }
+      function load() {
+        const s = localStorage.getItem(KEY);
+        if (s) {
+          try {
+            db = JSON.parse(s);
+          } catch (e) {}
+        }
+      }
+
+      // ══════════════════════════════════════════════════════════════
+      //  INIT
+      // ══════════════════════════════════════════════════════════════
+      function init() {
+        load();
+        document.getElementById("entry-date").valueAsDate = new Date();
+        document.getElementById("home-date-lbl").textContent =
+          new Date().toLocaleDateString("ko-KR", {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+          });
+        loadPatientForm();
+        renderEntryTable();
+        renderEvalEditor();
+        renderHome();
+        renderHistory();
+      }
+
+      function goTab(id, btn) {
+        document
+          .querySelectorAll(".pg")
+          .forEach((p) => p.classList.remove("on"));
+        document
+          .querySelectorAll(".tb")
+          .forEach((b) => b.classList.remove("on"));
+        document.getElementById("pg-" + id).classList.add("on");
+        if (btn) btn.classList.add("on");
+        if (id === "stats") renderStats();
+        if (id === "insights" || id === "home") renderInsights();
+        if (id === "strategy") renderStrategy();
+        if (id === "history") renderHistory();
+      }
+
+      // ══════════════════════════════════════════════════════════════
+      //  PATIENT
+      // ══════════════════════════════════════════════════════════════
+      function loadPatientForm() {
+        const p = db.patient;
+        [
+          "name",
+          "birth",
+          "gender",
+          "blood",
+          "height",
+          "weight",
+          "bpS",
+          "bpD",
+          "fbs",
+          "smoke",
+          "meds",
+          "disease",
+          "memo",
+        ].forEach((k) => {
+          const el = document.getElementById(
+            "pt-" + k.replace(/([A-Z])/g, "-$1").toLowerCase(),
+          );
+          if (el) el.value = p[k] || "";
+        });
+        renderFamilyHistory();
+        updateBMI();
+      }
+      function savePatient() {
+        const p = db.patient;
+        [
+          "name",
+          "birth",
+          "gender",
+          "blood",
+          "height",
+          "weight",
+          "bpS",
+          "bpD",
+          "fbs",
+          "smoke",
+          "meds",
+          "disease",
+          "memo",
+        ].forEach((k) => {
+          const id = "pt-" + k.replace(/([A-Z])/g, "-$1").toLowerCase();
+          const el = document.getElementById(id);
+          if (el) p[k] = el.value;
+        });
+        persist();
+        updateBMI();
+        alert("저장되었습니다!");
+      }
+      function updateBMI() {
+        const h = parseFloat(
+          document.getElementById("pt-height")?.value || db.patient.height,
         );
-        filteredTests.forEach((test) => {
-          const row = document.createElement("tr");
+        const w = parseFloat(
+          document.getElementById("pt-weight")?.value || db.patient.weight,
+        );
+        const bmiEl = document.getElementById("bmi-val");
+        const gradeEl = document.getElementById("bmi-grade");
+        if (!h || !w) {
+          if (bmiEl) bmiEl.textContent = "—";
+          return;
+        }
+        const bmi = (w / (h / 100) ** 2).toFixed(1);
+        if (bmiEl) bmiEl.textContent = bmi;
+        let grade = "",
+          color = "var(--grn)";
+        if (bmi < 18.5) {
+          grade = "저체중";
+          color = "var(--blu)";
+        } else if (bmi < 23) {
+          grade = "정상";
+          color = "var(--grn)";
+        } else if (bmi < 25) {
+          grade = "과체중";
+          color = "var(--yel)";
+        } else if (bmi < 30) {
+          grade = "비만(1단계)";
+          color = "var(--org)";
+        } else {
+          grade = "고도비만";
+          color = "var(--red)";
+        }
+        if (gradeEl) {
+          gradeEl.textContent = grade;
+          gradeEl.style.color = color;
+        }
+        if (bmiEl) bmiEl.style.color = color;
+      }
+      ["pt-height", "pt-weight"].forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener("input", updateBMI);
+      });
+      function addFamilyHistory() {
+        const d = document.getElementById("fh-disease").value;
+        const r = document.getElementById("fh-relation").value;
+        if (!db.patient.familyHistory) db.patient.familyHistory = [];
+        db.patient.familyHistory.push({ disease: d, relation: r });
+        renderFamilyHistory();
+        persist();
+      }
+      function removeFamilyHistory(i) {
+        db.patient.familyHistory.splice(i, 1);
+        renderFamilyHistory();
+        persist();
+      }
+      function renderFamilyHistory() {
+        const el = document.getElementById("family-history-list");
+        if (!el) return;
+        const fh = db.patient.familyHistory || [];
+        if (!fh.length) {
+          el.innerHTML =
+            '<div style="color:var(--sub2);font-size:.78rem;padding:6px 0">등록된 가족력 없음</div>';
+          return;
+        }
+        el.innerHTML = fh
+          .map(
+            (f, i) => `
+    <div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--bdr)">
+      <span class="sbadge warn">${f.relation}</span>
+      <span style="font-size:.82rem;font-weight:700">${f.disease}</span>
+      <button onclick="removeFamilyHistory(${i})" style="margin-left:auto;background:none;border:none;color:var(--red);cursor:pointer;font-size:.75rem">삭제</button>
+    </div>`,
+          )
+          .join("");
+      }
 
-          row.innerHTML = `
-            <td>${test.name}</td>
-            <td>${test.min} - ${test.max} ${test.unit}</td>
-            <td><input type="number" class="input-value" data-name="${test.name}" step="0.1" min="0"></td>
-            <td></td>
-            <td></td>
-          `;
-          tableBody.appendChild(row);
+      // ══════════════════════════════════════════════════════════════
+      //  ENTRY TABLE
+      // ══════════════════════════════════════════════════════════════
+      function renderEntryTable() {
+        const type = document.getElementById("type-filter").value;
+        const tests =
+          type === "all"
+            ? TESTS
+            : TESTS.filter((t) => t.cat === type || t.grp === type);
+        const container = document.getElementById("entry-table-container");
+
+        // Group by grp
+        const groups = {};
+        tests.forEach((t) => {
+          if (!groups[t.grp]) groups[t.grp] = [];
+          groups[t.grp].push(t);
         });
 
-        document.querySelectorAll(".input-value").forEach((input) => {
-          input.addEventListener("input", function () {
-            const name = this.getAttribute("data-name");
-            const value = parseFloat(this.value);
-            const test = bloodTests.find((t) => t.name === name);
-            let judgment = "";
-            let riskFactor = "";
+        let html = "";
+        Object.entries(groups).forEach(([grp, items]) => {
+          html += `<div class="group-hdr" onclick="toggleGroup('grp-${grp}')">${grp} (${items.length}항목)<span>▼</span></div>`;
+          html += `<div id="grp-${grp}" style="border:1px solid var(--bdr);border-radius:10px;overflow:hidden;margin-bottom:8px">`;
+          html += `<table style="width:100%;border-collapse:collapse">`;
+          html += `<thead><tr style="background:var(--bg3)">
+      <th style="padding:8px 12px;text-align:left;font-size:.68rem;font-weight:700;color:var(--sub);border-bottom:1px solid var(--bdr);width:28%">항목명</th>
+      <th style="padding:8px 12px;text-align:center;font-size:.68rem;font-weight:700;color:var(--sub);border-bottom:1px solid var(--bdr);width:22%">정상 범위</th>
+      <th style="padding:8px 12px;text-align:center;font-size:.68rem;font-weight:700;color:var(--sub);border-bottom:1px solid var(--bdr);width:18%">입력값</th>
+      <th style="padding:8px 12px;text-align:center;font-size:.68rem;font-weight:700;color:var(--sub);border-bottom:1px solid var(--bdr);width:10%">판정</th>
+      <th style="padding:8px 12px;text-align:left;font-size:.68rem;font-weight:700;color:var(--sub);border-bottom:1px solid var(--bdr)">위험 요인</th>
+    </tr></thead><tbody>`;
+          items.forEach((t) => {
+            const ev = db.customEvals[t.name] || {};
+            const mn = ev.min != null ? ev.min : t.min;
+            const mx = ev.max != null ? ev.max : t.max;
+            html += `<tr id="row-${t.name.replace(/[^a-zA-Z0-9]/g, "_")}" style="border-bottom:1px solid var(--bdr)">
+        <td style="padding:8px 12px">
+          <div style="font-weight:700;font-size:.82rem">${t.name}</div>
+          <div style="font-size:.65rem;color:var(--sub2)">${t.cat}</div>
+        </td>
+        <td style="padding:8px 12px;text-align:center;font-family:'DM Mono',monospace;font-size:.75rem;color:var(--sub)">${mn} – ${mx}<br><span style="font-size:.63rem;color:var(--sub2)">${t.unit}</span></td>
+        <td style="padding:8px 12px">
+          <div style="position:relative">
+            <input type="number" id="val-${t.name.replace(/[^a-zA-Z0-9]/g, "_")}" step="0.01" min="0"
+              style="width:100%;padding:6px 36px 6px 10px;border:1px solid var(--bdr);border-radius:7px;background:var(--bg3);color:var(--text);font-family:'DM Mono',monospace;font-size:.82rem;transition:.15s"
+              oninput="onValInput(this,'${t.name}',${mn},${mx})" placeholder="—"/>
+            <span style="position:absolute;right:6px;top:50%;transform:translateY(-50%);font-size:.6rem;color:var(--sub2);pointer-events:none">${t.unit}</span>
+          </div>
+        </td>
+        <td style="padding:8px 12px;text-align:center" id="jdg-${t.name.replace(/[^a-zA-Z0-9]/g, "_")}">—</td>
+        <td style="padding:8px 12px;font-size:.72rem;color:var(--sub);max-width:240px;line-height:1.5" id="risk-${t.name.replace(/[^a-zA-Z0-9]/g, "_")}"></td>
+      </tr>`;
+          });
+          html += `</tbody></table></div>`;
+        });
+        container.innerHTML = html;
+      }
 
-            if (isNaN(value)) {
-              judgment = "";
-              riskFactor = "";
-            } else if (value < test.min) {
-              judgment = `<span class="low">수치 낮음</span>`;
-              riskFactor = test.lowRisk;
-            } else if (value > test.max) {
-              judgment = `<span class="high">수치 높음</span>`;
-              riskFactor = test.highRisk;
-            } else {
-              judgment = `<span class="normal">정상</span>`;
-              riskFactor = "";
+      function toggleGroup(id) {
+        const el = document.getElementById(id);
+        if (el) el.style.display = el.style.display === "none" ? "" : "none";
+      }
+
+      function onValInput(input, name, mn, mx) {
+        const val = parseFloat(input.value);
+        const safeId = name.replace(/[^a-zA-Z0-9]/g, "_");
+        const jdgEl = document.getElementById("jdg-" + safeId);
+        const riskEl = document.getElementById("risk-" + safeId);
+        const rowEl = document.getElementById("row-" + safeId);
+        const test = TESTS.find((t) => t.name === name);
+        if (!test) return;
+        const ev = db.customEvals[name] || {};
+        const highRisk = ev.highRisk || test.highRisk;
+        const lowRisk = ev.lowRisk || test.lowRisk;
+
+        if (isNaN(val) || input.value === "") {
+          if (jdgEl)
+            jdgEl.innerHTML = '<span style="color:var(--sub2)">—</span>';
+          if (riskEl) riskEl.textContent = "";
+          if (rowEl) rowEl.style.background = "";
+          return;
+        }
+        let status, risk, bg;
+        if (val < mn) {
+          status = '<span class="sbadge low">낮음 ↓</span>';
+          risk = lowRisk;
+          bg = "rgba(248,81,73,.04)";
+        } else if (val > mx) {
+          status = '<span class="sbadge high">높음 ↑</span>';
+          risk = highRisk;
+          bg = "rgba(240,136,62,.04)";
+        } else {
+          status = '<span class="sbadge normal">정상</span>';
+          risk = "";
+          bg = "rgba(63,185,80,.02)";
+        }
+        if (jdgEl) jdgEl.innerHTML = status;
+        if (riskEl) riskEl.textContent = risk;
+        if (rowEl) rowEl.style.background = bg;
+        input.style.borderColor =
+          val < mn || val > mx
+            ? val < mn
+              ? "var(--red)"
+              : "var(--org)"
+            : "var(--grn)";
+      }
+
+      function saveEntry() {
+        const date = document.getElementById("entry-date").value;
+        if (!date) {
+          alert("날짜를 선택하세요.");
+          return;
+        }
+        const hospital = document.getElementById("entry-hospital").value;
+        const values = {};
+        TESTS.forEach((t) => {
+          const id = "val-" + t.name.replace(/[^a-zA-Z0-9]/g, "_");
+          const el = document.getElementById(id);
+          if (el && el.value !== "") values[t.name] = parseFloat(el.value);
+        });
+        if (!Object.keys(values).length) {
+          alert("최소 1개 이상 입력하세요.");
+          return;
+        }
+
+        const record = {
+          date,
+          hospital,
+          values,
+          savedAt: new Date().toISOString(),
+        };
+        if (editingRecordIdx !== null) {
+          db.records[editingRecordIdx] = record;
+          editingRecordIdx = null;
+        } else {
+          db.records.push(record);
+          db.records.sort((a, b) => a.date.localeCompare(b.date));
+        }
+        persist();
+        resetEntryForm();
+        renderHome();
+        renderHistory();
+        document.getElementById("entry-save-btn").textContent =
+          "💾 검사 기록 저장";
+        document.getElementById("entry-edit-lbl").textContent = "";
+        alert("저장되었습니다!");
+      }
+
+      function resetEntryForm() {
+        document.getElementById("entry-date").valueAsDate = new Date();
+        document.getElementById("entry-hospital").value = "";
+        document.getElementById("entry-edit-lbl").textContent = "";
+        editingRecordIdx = null;
+        TESTS.forEach((t) => {
+          const id = "val-" + t.name.replace(/[^a-zA-Z0-9]/g, "_");
+          const el = document.getElementById(id);
+          if (el) {
+            el.value = "";
+            el.style.borderColor = "";
+            onValInput(el, t.name, t.min, t.max);
+          }
+        });
+        document.getElementById("entry-save-btn").textContent =
+          "💾 검사 기록 저장";
+        document.getElementById("entry-preview").innerHTML = "";
+      }
+
+      function editRecord(idx) {
+        const r = db.records[idx];
+        editingRecordIdx = idx;
+        document.getElementById("entry-date").value = r.date;
+        document.getElementById("entry-hospital").value = r.hospital || "";
+        document.getElementById("type-filter").value = "all";
+        renderEntryTable();
+        TESTS.forEach((t) => {
+          const id = "val-" + t.name.replace(/[^a-zA-Z0-9]/g, "_");
+          const el = document.getElementById(id);
+          if (el && r.values[t.name] != null) {
+            el.value = r.values[t.name];
+            const ev = db.customEvals[t.name] || {};
+            onValInput(
+              el,
+              t.name,
+              ev.min != null ? ev.min : t.min,
+              ev.max != null ? ev.max : t.max,
+            );
+          }
+        });
+        document.getElementById("entry-save-btn").textContent = "💾 수정 저장";
+        document.getElementById("entry-edit-lbl").textContent =
+          ` — ${r.date} 수정 중`;
+        goTab("entry", document.querySelectorAll(".tb")[2]);
+        window.scrollTo(0, 0);
+      }
+
+      function deleteRecord(idx) {
+        if (!confirm("이 검사 기록을 삭제할까요?")) return;
+        db.records.splice(idx, 1);
+        persist();
+        renderHome();
+        renderHistory();
+      }
+
+      function autofillSample() {
+        const samples = {
+          RBC: 4.9,
+          Hemoglobin: 13.5,
+          Hematocrit: 41,
+          MCV: 88,
+          MCH: 28,
+          MCHC: 33,
+          RDW: 13,
+          WBC: 6.5,
+          Neutrophils: 58,
+          Lymphocytes: 31,
+          Monocytes: 5,
+          Eosinophils: 2,
+          Basophils: 0.5,
+          Platelets: 220,
+          MPV: 9.5,
+          ESR: 12,
+          Reticulocyte: 0.9,
+          BUN: 14,
+          Creatinine: 0.9,
+          GFR: 95,
+          "Uric Acid": 5.5,
+          "ALT(GPT)": 32,
+          "AST(GOT)": 25,
+          ALP: 80,
+          GGT: 28,
+          "Bilirubin Total": 0.6,
+          Albumin: 4.2,
+          "Total Protein": 7.1,
+          LDH: 180,
+          Sodium: 140,
+          Potassium: 4.0,
+          Calcium: 9.5,
+          Magnesium: 1.9,
+          "Total Cholesterol": 185,
+          "LDL Cholesterol": 110,
+          "HDL Cholesterol": 45,
+          Triglycerides: 160,
+          VLDL: 32,
+          "Fasting Blood Sugar": 95,
+          HbA1c: 5.4,
+          Insulin: 12,
+          TSH: 2.5,
+          "Free T4": 1.2,
+          Cortisol: 12,
+          CRP: 1.8,
+          "Vitamin D": 22,
+          "Vitamin B12": 350,
+          Folate: 8,
+          Homocysteine: 12,
+          Amylase: 80,
+          Lipase: 35,
+          "Ferritin(남)": 45,
+          Iron: 90,
+          TIBC: 320,
+          Transferrin: 280,
+        };
+        Object.entries(samples).forEach(([name, val]) => {
+          const id = "val-" + name.replace(/[^a-zA-Z0-9]/g, "_");
+          const el = document.getElementById(id);
+          if (el) {
+            el.value = val;
+            const t = TESTS.find((x) => x.name === name);
+            if (t) {
+              const ev = db.customEvals[name] || {};
+              onValInput(
+                el,
+                name,
+                ev.min != null ? ev.min : t.min,
+                ev.max != null ? ev.max : t.max,
+              );
             }
+          }
+        });
+      }
 
-            this.parentElement.nextElementSibling.innerHTML = judgment;
-            this.parentElement.nextElementSibling.nextElementSibling.innerHTML =
-              riskFactor;
+      // ══════════════════════════════════════════════════════════════
+      //  HISTORY
+      // ══════════════════════════════════════════════════════════════
+      function renderHistory() {
+        const container = document.getElementById("history-list-container");
+        document.getElementById("record-count-badge").textContent =
+          db.records.length + "건";
+        if (!db.records.length) {
+          container.innerHTML =
+            '<div class="empty"><div class="empty-ico">📅</div><div class="empty-msg">검사 기록 없음</div><div class="empty-sub">검사 입력 탭에서 기록을 추가하세요</div></div>';
+          return;
+        }
+        const sorted = [...db.records].reverse();
+        container.innerHTML = sorted
+          .map((r, ri) => {
+            const realIdx = db.records.length - 1 - ri;
+            const score = calcScore(r);
+            const abnItems = getAbnItems(r);
+            const scoreColor =
+              score >= 80
+                ? "var(--grn)"
+                : score >= 60
+                  ? "var(--blu)"
+                  : score >= 40
+                    ? "var(--yel)"
+                    : score >= 20
+                      ? "var(--org)"
+                      : "var(--red)";
+            const chips = abnItems
+              .slice(0, 5)
+              .map(
+                (a) =>
+                  `<span class="hist-chip" style="background:${a.status === "high" ? "var(--org-pale)" : "var(--red-pale)"};color:${a.status === "high" ? "var(--org)" : "var(--red)"}">${a.name}</span>`,
+              )
+              .join("");
+            return `<div class="card" style="cursor:pointer" onclick="showRecordDetail(${realIdx})">
+      <div style="display:flex;align-items:center;gap:14px">
+        <div class="hist-date">${r.date}</div>
+        <div class="hist-score" style="background:${scoreColor}22;color:${scoreColor}">${score}</div>
+        <div style="flex:1">
+          <div style="font-weight:800;font-size:.85rem;margin-bottom:3px">${r.hospital || "기관 미입력"} · ${Object.keys(r.values).length}항목 검사</div>
+          <div style="display:flex;gap:4px;flex-wrap:wrap">${chips}${abnItems.length > 5 ? `<span style="font-size:.66rem;color:var(--sub)">+${abnItems.length - 5}</span>` : ""}</div>
+        </div>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-ghost" style="font-size:.72rem;padding:5px 10px" onclick="event.stopPropagation();editRecord(${realIdx})">✏ 수정</button>
+          <button class="btn btn-ghost" style="font-size:.72rem;padding:5px 10px;color:var(--red);border-color:var(--red)" onclick="event.stopPropagation();deleteRecord(${realIdx})">삭제</button>
+        </div>
+      </div>
+    </div>`;
+          })
+          .join("");
+      }
+
+      function showRecordDetail(idx) {
+        const r = db.records[idx];
+        document.getElementById("modal-title-text").textContent =
+          `${r.date} 검사 결과`;
+        const abnItems = getAbnItems(r);
+        const score = calcScore(r);
+        let html = `<div style="margin-bottom:14px;display:flex;align-items:center;gap:12px">
+    <div style="font-size:2rem;font-weight:900;font-family:'DM Mono',monospace;color:${score >= 80 ? "var(--grn)" : score >= 60 ? "var(--blu)" : score >= 40 ? "var(--yel)" : "var(--red)"}">${score}</div>
+    <div><div style="font-size:.82rem;font-weight:700">${r.hospital || "기관 미입력"}</div><div style="font-size:.72rem;color:var(--sub)">${Object.keys(r.values).length}항목 검사 · 비정상 ${abnItems.length}항목</div></div>
+  </div>`;
+        // Categorized results
+        const catMap = {};
+        Object.entries(r.values).forEach(([name, val]) => {
+          const t = TESTS.find((x) => x.name === name);
+          if (!t) return;
+          if (!catMap[t.cat]) catMap[t.cat] = [];
+          const ev = db.customEvals[name] || {};
+          const mn = ev.min != null ? ev.min : t.min;
+          const mx = ev.max != null ? ev.max : t.max;
+          const status = val < mn ? "low" : val > mx ? "high" : "normal";
+          catMap[t.cat].push({ name, val, mn, mx, unit: t.unit, status });
+        });
+        Object.entries(catMap).forEach(([cat, items]) => {
+          html += `<div style="margin-bottom:10px"><div style="font-size:.72rem;font-weight:800;color:var(--sub);text-transform:uppercase;margin-bottom:6px">${cat}</div>`;
+          html += `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:6px">`;
+          items.forEach(({ name, val, mn, mx, unit, status }) => {
+            const c =
+              status === "normal"
+                ? "var(--grn)"
+                : status === "high"
+                  ? "var(--org)"
+                  : "var(--red)";
+            html += `<div style="background:${c}11;border:1px solid ${c}44;border-radius:8px;padding:8px">
+        <div style="font-size:.7rem;color:var(--sub);margin-bottom:2px">${name}</div>
+        <div style="font-size:.95rem;font-weight:900;font-family:'DM Mono',monospace;color:${c}">${val} <span style="font-size:.6rem;font-weight:400">${unit}</span></div>
+        <div style="font-size:.62rem;color:var(--sub2)">${mn}–${mx}</div>
+      </div>`;
+          });
+          html += "</div></div>";
+        });
+        document.getElementById("modal-body").innerHTML = html;
+        document.getElementById("modal-overlay").classList.add("on");
+      }
+
+      // ══════════════════════════════════════════════════════════════
+      //  SCORE & ANALYSIS HELPERS
+      // ══════════════════════════════════════════════════════════════
+      function calcScore(record) {
+        if (!record) return 0;
+        const vals = record.values;
+        const tests = Object.keys(vals);
+        if (!tests.length) return 0;
+        let totalPenalty = 0,
+          count = 0;
+        tests.forEach((name) => {
+          const val = vals[name];
+          const t = TESTS.find((x) => x.name === name);
+          if (!t) return;
+          const ev = db.customEvals[name] || {};
+          const mn = ev.min != null ? ev.min : t.min;
+          const mx = ev.max != null ? ev.max : t.max;
+          count++;
+          if (val < mn || val > mx) {
+            const range = mx - mn;
+            const dev = Math.min(
+              Math.abs(val < mn ? val - mn : val - mx) / range,
+              1,
+            );
+            totalPenalty += Math.min(dev * 30 + 10, 40);
+          }
+        });
+        if (!count) return 0;
+        return Math.max(0, Math.round(100 - totalPenalty / count));
+      }
+
+      function getAbnItems(record) {
+        const result = [];
+        Object.entries(record.values).forEach(([name, val]) => {
+          const t = TESTS.find((x) => x.name === name);
+          if (!t) return;
+          const ev = db.customEvals[name] || {};
+          const mn = ev.min != null ? ev.min : t.min;
+          const mx = ev.max != null ? ev.max : t.max;
+          if (val < mn)
+            result.push({
+              name,
+              val,
+              mn,
+              mx,
+              unit: t.unit,
+              status: "low",
+              delta: (((val - mn) / mn) * 100).toFixed(1),
+            });
+          else if (val > mx)
+            result.push({
+              name,
+              val,
+              mn,
+              mx,
+              unit: t.unit,
+              status: "high",
+              delta: (((val - mx) / mx) * 100).toFixed(1),
+            });
+        });
+        return result.sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta));
+      }
+
+      function getVal(name, record) {
+        if (!record) {
+          const last = db.records[db.records.length - 1];
+          return last ? last.values[name] || 0 : 0;
+        }
+        return record.values[name] || 0;
+      }
+
+      // ══════════════════════════════════════════════════════════════
+      //  HOME DASHBOARD
+      // ══════════════════════════════════════════════════════════════
+      function renderHome() {
+        const last = db.records.length
+          ? db.records[db.records.length - 1]
+          : null;
+        const total = db.records.length;
+        document.getElementById("k-total").textContent = total;
+        document.getElementById("record-count-badge").textContent =
+          total + "건";
+        if (db.records.length) {
+          document.getElementById("last-update-lbl").textContent =
+            "마지막 검사: " + db.records[db.records.length - 1].date;
+        }
+
+        if (!last) {
+          updateScoreRing(0);
+          return;
+        }
+
+        const score = calcScore(last);
+        document.getElementById("k-score").textContent = score;
+        document.getElementById("k-score-lbl").textContent =
+          score >= 80
+            ? "매우 좋음"
+            : score >= 60
+              ? "양호"
+              : score >= 40
+                ? "주의"
+                : score >= 20
+                  ? "위험"
+                  : "심각";
+        const abnItems = getAbnItems(last);
+        document.getElementById("k-abn").textContent = abnItems.length;
+        document.getElementById("k-abn-sub").textContent =
+          `/ ${Object.keys(last.values).length}개 항목 중`;
+        document.getElementById("k-last").textContent = last.date.slice(5);
+        const days = Math.floor((new Date() - new Date(last.date)) / 86400000);
+        document.getElementById("k-last-days").textContent =
+          days === 0 ? "오늘" : days + "일 전";
+        updateScoreRing(score);
+        renderAlerts(abnItems, last);
+        renderTopChanges();
+        renderCorrelationHighlights(last);
+      }
+
+      function updateScoreRing(score) {
+        const circle = document.getElementById("score-ring");
+        const numEl = document.getElementById("score-num");
+        const gradeEl = document.getElementById("score-grade");
+        const descEl = document.getElementById("score-desc");
+        if (!circle) return;
+        const circumference = 314;
+        const offset = circumference * (1 - score / 100);
+        circle.style.strokeDashoffset = offset;
+        const color =
+          score >= 80
+            ? "var(--grn)"
+            : score >= 60
+              ? "var(--blu)"
+              : score >= 40
+                ? "var(--yel)"
+                : score >= 20
+                  ? "var(--org)"
+                  : "var(--red)";
+        circle.style.stroke = color;
+        if (numEl) {
+          numEl.textContent = score;
+          numEl.style.color = color;
+        }
+        if (gradeEl) {
+          const g =
+            score >= 80
+              ? "매우 좋음"
+              : score >= 60
+                ? "양호"
+                : score >= 40
+                  ? "주의 필요"
+                  : score >= 20
+                    ? "위험"
+                    : "심각";
+          gradeEl.textContent = g;
+          gradeEl.style.color = color;
+        }
+        if (descEl) {
+          const d =
+            score >= 80
+              ? "모든 수치가 정상 범위입니다"
+              : score >= 60
+                ? "일부 수치 관리가 필요합니다"
+                : score >= 40
+                  ? "여러 수치가 비정상입니다"
+                  : score >= 20
+                    ? "즉각적인 의료 상담이 필요합니다"
+                    : "긴급 의료 평가가 필요합니다";
+          descEl.textContent = d;
+        }
+      }
+
+      function renderAlerts(abnItems, last) {
+        const el = document.getElementById("alert-list");
+        if (!el) return;
+        if (!abnItems.length) {
+          el.innerHTML =
+            '<div class="alert-item good"><span class="alert-ico">✅</span><div><div class="alert-name">모든 수치 정상</div><div class="alert-val">이상 수치가 발견되지 않았습니다</div></div></div>';
+          return;
+        }
+        const v = (name) => last.values[name] || 0;
+        el.innerHTML = abnItems
+          .slice(0, 6)
+          .map((a) => {
+            const sev =
+              Math.abs(a.delta) > 50
+                ? "crit"
+                : Math.abs(a.delta) > 20
+                  ? "warn"
+                  : "info";
+            const test = TESTS.find((t) => t.name === a.name);
+            const insight = test
+              ? a.status === "low"
+                ? test.lowRisk
+                : test.highRisk
+              : "";
+            return `<div class="alert-item ${sev}">
+      <span class="alert-ico">${a.status === "low" ? "🔻" : "🔺"}</span>
+      <div>
+        <div class="alert-name">${a.name}</div>
+        <div class="alert-val">${a.val} ${a.unit} · 정상범위 ${a.mn}–${a.mx} · 편차 ${Math.abs(a.delta)}%</div>
+        <div class="alert-insight">${insight}</div>
+      </div>
+    </div>`;
+          })
+          .join("");
+      }
+
+      function renderTopChanges() {
+        if (db.records.length < 2) {
+          ["top-improved", "top-worsened", "period-change"].forEach((id) => {
+            const el = document.getElementById(id);
+            if (el)
+              el.innerHTML =
+                '<div class="empty" style="padding:20px"><div class="empty-sub">2회 이상 검사 필요</div></div>';
+          });
+          return;
+        }
+        const last = db.records[db.records.length - 1];
+        const prev = db.records[db.records.length - 2];
+        const changes = [];
+        TESTS.forEach((t) => {
+          const lv = last.values[t.name];
+          const pv = prev.values[t.name];
+          if (lv == null || pv == null || pv === 0) return;
+          const ev = db.customEvals[t.name] || {};
+          const mn = ev.min != null ? ev.min : t.min;
+          const mx = ev.max != null ? ev.max : t.max;
+          const midOld = pv < mn ? "low" : pv > mx ? "high" : "normal";
+          const midNew = lv < mn ? "low" : lv > mx ? "high" : "normal";
+          const pctChange = ((lv - pv) / Math.abs(pv)) * 100;
+          const wasAbn = midOld !== "normal";
+          const isNow = midNew !== "normal";
+          let score = 0;
+          if (wasAbn && !isNow) score = 100;
+          else if (!wasAbn && isNow) score = -100;
+          else if (wasAbn && isNow) {
+            const devOld = midOld === "low" ? (mn - pv) / mn : (pv - mx) / mx;
+            const devNew = midNew === "low" ? (mn - lv) / mn : (lv - mx) / mx;
+            score = (devOld - devNew) * 50;
+          }
+          changes.push({
+            name: t.name,
+            unit: t.unit,
+            lv,
+            pv,
+            pctChange,
+            score,
           });
         });
+        const improved = changes
+          .filter((c) => c.score > 0)
+          .sort((a, b) => b.score - a.score)
+          .slice(0, 3);
+        const worsened = changes
+          .filter((c) => c.score < 0)
+          .sort((a, b) => a.score - b.score)
+          .slice(0, 3);
+
+        const renderList = (items, el, isGood) => {
+          if (!items.length) {
+            el.innerHTML =
+              '<div class="empty" style="padding:10px"><div class="empty-sub">해당 없음</div></div>';
+            return;
+          }
+          el.innerHTML = items
+            .map(
+              (c, i) => `
+      <div class="top-change-item">
+        <div class="tc-rank" style="background:${isGood ? "var(--grn-pale)" : "var(--red-pale)"};color:${isGood ? "var(--grn)" : "var(--red)"}">${i + 1}</div>
+        <div class="tc-name">${c.name}</div>
+        <div class="tc-val" style="color:${isGood ? "var(--grn)" : "var(--red)"}">
+          ${c.pv.toFixed(1)}→${c.lv.toFixed(1)}<br>
+          <span style="font-size:.65rem">${c.pctChange > 0 ? "+" : ""}${c.pctChange.toFixed(1)}%</span>
+        </div>
+      </div>`,
+            )
+            .join("");
+        };
+        renderList(improved, document.getElementById("top-improved"), true);
+        renderList(worsened, document.getElementById("top-worsened"), false);
+
+        // Period change
+        const el = document.getElementById("period-change");
+        const periods = [
+          {
+            label: "직전 → 최근",
+            r1: db.records[db.records.length - 2],
+            r2: db.records[db.records.length - 1],
+          },
+        ];
+        if (db.records.length >= 3)
+          periods.push({
+            label: "3회 전 → 최근",
+            r1: db.records[db.records.length - 3],
+            r2: db.records[db.records.length - 1],
+          });
+        el.innerHTML = periods
+          .map((p) => {
+            const s1 = calcScore(p.r1),
+              s2 = calcScore(p.r2),
+              diff = s2 - s1;
+            const c =
+              diff > 0 ? "var(--grn)" : diff < 0 ? "var(--red)" : "var(--sub)";
+            return `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--bdr)">
+      <div style="font-size:.72rem;color:var(--sub);flex:1">${p.label}</div>
+      <div style="font-family:'DM Mono',monospace;font-weight:800;color:${c}">${diff > 0 ? "+" : ""}${diff}점</div>
+    </div>`;
+          })
+          .join("");
       }
 
-      function sortTable(index) {
-        const rows = Array.from(
-          document.querySelector("#bloodTestTable tbody").rows
-        );
-        const sortedRows = rows.sort((rowA, rowB) => {
-          const cellA = rowA.cells[index].innerText;
-          const cellB = rowB.cells[index].innerText;
-          return cellA.localeCompare(cellB, "ko");
+      function renderCorrelationHighlights(record) {
+        const el = document.getElementById("corr-highlights");
+        if (!el) return;
+        const v = (name) => record.values[name] || 0;
+        const triggered = INSIGHT_RULES.filter((r) => {
+          try {
+            return r.cond(v);
+          } catch (e) {
+            return false;
+          }
+        }).slice(0, 6);
+        if (!triggered.length) {
+          el.innerHTML =
+            '<div class="empty" style="padding:20px"><div class="empty-sub">연결고리 규칙에 해당하는 수치가 없습니다 (정상 범위)</div></div>';
+          return;
+        }
+        el.innerHTML =
+          `<div class="corr-network">` +
+          triggered
+            .map((r) => {
+              const relNodes = r.related
+                .map((name) => {
+                  const val = record.values[name];
+                  const t = TESTS.find((x) => x.name === name);
+                  if (!t || val == null)
+                    return `<span class="corr-node">${name}</span>`;
+                  const ev = db.customEvals[name] || {};
+                  const mn = ev.min != null ? ev.min : t.min;
+                  const mx = ev.max != null ? ev.max : t.max;
+                  const abn = val < mn || val > mx;
+                  return `<span class="corr-node${abn ? " abn" : ""}">${name}:${val}</span>`;
+                })
+                .join('<span class="corr-arrow">·</span>');
+              return `<div class="corr-item">
+      <div style="margin-bottom:6px"><span class="insight-badge ${r.severity}">${r.severity === "critical" ? "⚠ 주의" : r.severity === "warning" ? "💡 경고" : "✅ 양호"}</span></div>
+      <div style="font-weight:800;font-size:.82rem;margin-bottom:5px">${r.title}</div>
+      <div class="corr-nodes">${relNodes}</div>
+      <div class="corr-desc">${r.body.slice(0, 80)}...</div>
+    </div>`;
+            })
+            .join("") +
+          "</div>";
+      }
+
+      // ══════════════════════════════════════════════════════════════
+      //  STATS CHARTS
+      // ══════════════════════════════════════════════════════════════
+      const STAT_GROUPS = {
+        "빈혈/혈액": ["RBC", "Hemoglobin", "Hematocrit", "WBC", "Platelets"],
+        간수치: [
+          "ALT(GPT)",
+          "AST(GOT)",
+          "GGT",
+          "ALP",
+          "Bilirubin Total",
+          "Albumin",
+        ],
+        췌장수치: ["Amylase", "Lipase", "GGT", "Triglycerides"],
+        당수치: ["Fasting Blood Sugar", "HbA1c", "Insulin"],
+        신장수치: ["BUN", "Creatinine", "GFR", "Uric Acid"],
+        "지질/콜레스테롤": [
+          "Total Cholesterol",
+          "LDL Cholesterol",
+          "HDL Cholesterol",
+          "Triglycerides",
+        ],
+        "면역/염증": ["WBC", "CRP", "hs-CRP", "ESR", "Lymphocytes", "IgG"],
+        갑상선: ["TSH", "Free T4", "Free T3"],
+        철분: ["Ferritin(남)", "Ferritin(여)", "Iron", "TIBC", "Transferrin"],
+        전해질: ["Sodium", "Potassium", "Calcium", "Magnesium", "Phosphorus"],
+      };
+
+      function renderStats() {
+        const filter =
+          document.getElementById("stats-type-filter")?.value || "all";
+        const container = document.getElementById("stats-charts-container");
+        if (!container) return;
+        if (!db.records.length) {
+          container.innerHTML =
+            '<div class="empty"><div class="empty-ico">📊</div><div class="empty-msg">데이터 없음</div><div class="empty-sub">검사 기록을 추가하면 차트가 표시됩니다</div></div>';
+          return;
+        }
+        const labels = db.records.map((r) => r.date.slice(5));
+        const groups =
+          filter === "all"
+            ? STAT_GROUPS
+            : { [filter]: STAT_GROUPS[filter] || [] };
+        container.innerHTML = "";
+        Object.entries(groups).forEach(([grpName, testNames]) => {
+          // Check if any of these tests have data
+          const available = testNames.filter((name) =>
+            db.records.some((r) => r.values[name] != null),
+          );
+          if (!available.length) return;
+
+          const section = document.createElement("div");
+          section.innerHTML = `<div style="font-size:.88rem;font-weight:900;color:var(--text);margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--bdr)">${grpName}</div>`;
+          const grid = document.createElement("div");
+          grid.style.cssText =
+            "display:grid;grid-template-columns:repeat(auto-fill,minmax(420px,1fr));gap:14px;margin-bottom:20px";
+
+          available.forEach((name) => {
+            const t = TESTS.find((x) => x.name === name);
+            if (!t) return;
+            const ev = db.customEvals[name] || {};
+            const mn = ev.min != null ? ev.min : t.min;
+            const mx = ev.max != null ? ev.max : t.max;
+            const vals = db.records.map((r) =>
+              r.values[name] != null ? r.values[name] : null,
+            );
+            if (vals.every((v) => v == null)) return;
+
+            const card = document.createElement("div");
+            card.className = "chart-card";
+            const canvasId = "ch-" + name.replace(/[^a-zA-Z0-9]/g, "_");
+            const lastVal = vals.filter((v) => v != null).pop();
+            const status =
+              lastVal == null
+                ? "—"
+                : lastVal < mn
+                  ? "low"
+                  : lastVal > mx
+                    ? "high"
+                    : "normal";
+            const statusHtml =
+              status === "normal"
+                ? '<span class="sbadge normal">정상</span>'
+                : status === "high"
+                  ? '<span class="sbadge high">높음</span>'
+                  : status === "low"
+                    ? '<span class="sbadge low">낮음</span>'
+                    : "";
+            card.innerHTML = `<h3>${name} <span style="font-size:.65rem;font-weight:400;color:var(--sub2)">${t.unit}</span> ${statusHtml}</h3>
+        <div class="chart-box" style="height:160px"><canvas id="${canvasId}"></canvas></div>
+        <div style="display:flex;gap:10px;margin-top:8px;font-size:.7rem;color:var(--sub2)">
+          <span>정상범위: ${mn}–${mx}</span>
+          ${lastVal != null ? `<span>최근값: <b style="color:${status === "normal" ? "var(--grn)" : status === "high" ? "var(--org)" : "var(--red)"}">${lastVal}</b></span>` : ""}
+        </div>`;
+            grid.appendChild(card);
+
+            // Defer chart build
+            setTimeout(() => {
+              const ctx = document.getElementById(canvasId);
+              if (!ctx) return;
+              if (charts[canvasId]) charts[canvasId].destroy();
+              const pointColors = vals.map((v) =>
+                v == null
+                  ? "transparent"
+                  : v < mn
+                    ? "#f85149"
+                    : v > mx
+                      ? "#f0883e"
+                      : "#3fb950",
+              );
+              charts[canvasId] = new Chart(ctx.getContext("2d"), {
+                type: "line",
+                data: {
+                  labels,
+                  datasets: [
+                    {
+                      data: vals,
+                      borderColor: "#58a6ff",
+                      backgroundColor: "rgba(88,166,255,.07)",
+                      fill: true,
+                      tension: 0.4,
+                      pointRadius: 5,
+                      pointBackgroundColor: pointColors,
+                      pointBorderColor: "var(--bg)",
+                      pointBorderWidth: 1.5,
+                      spanGaps: true,
+                    },
+                    {
+                      data: labels.map(() => mn),
+                      borderColor: "rgba(63,185,80,.4)",
+                      borderDash: [4, 3],
+                      pointRadius: 0,
+                      fill: false,
+                    },
+                    {
+                      data: labels.map(() => mx),
+                      borderColor: "rgba(63,185,80,.4)",
+                      borderDash: [4, 3],
+                      pointRadius: 0,
+                      fill: false,
+                    },
+                  ],
+                },
+                options: {
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                      callbacks: {
+                        label: (ctx) => {
+                          const v = ctx.raw;
+                          if (v == null) return "";
+                          const s =
+                            v < mn ? "⬇ 낮음" : v > mx ? "⬆ 높음" : "✓ 정상";
+                          return `${v} ${t.unit} (${s})`;
+                        },
+                      },
+                    },
+                  },
+                  scales: {
+                    x: {
+                      grid: { color: "rgba(255,255,255,.04)" },
+                      ticks: { color: "var(--sub2)", font: { size: 10 } },
+                    },
+                    y: {
+                      grid: { color: "rgba(255,255,255,.04)" },
+                      ticks: { color: "var(--sub2)", font: { size: 10 } },
+                      suggestedMin: Math.min(
+                        mn * 0.8,
+                        ...vals.filter((v) => v != null),
+                      ),
+                      suggestedMax: Math.max(
+                        mx * 1.2,
+                        ...vals.filter((v) => v != null),
+                      ),
+                    },
+                  },
+                },
+              });
+            }, 50);
+          });
+          section.appendChild(grid);
+          container.appendChild(section);
+        });
+      }
+
+      // ══════════════════════════════════════════════════════════════
+      //  INSIGHTS ENGINE
+      // ══════════════════════════════════════════════════════════════
+      function renderInsights() {
+        const container = document.getElementById("insights-container");
+        if (!container) return;
+        const last = db.records.length
+          ? db.records[db.records.length - 1]
+          : null;
+        if (!last) {
+          container.innerHTML =
+            '<div class="empty"><div class="empty-ico">🔬</div><div class="empty-msg">분석 대기 중</div><div class="empty-sub">검사 기록을 추가하면 자동 분석됩니다</div></div>';
+          return;
+        }
+        const v = (name) => last.values[name] || 0;
+        const triggered = INSIGHT_RULES.filter((r) => {
+          try {
+            return r.cond(v);
+          } catch (e) {
+            return false;
+          }
+        });
+        const normal = INSIGHT_RULES.filter((r) => {
+          try {
+            return !r.cond(v);
+          } catch (e) {
+            return false;
+          }
         });
 
-        const tableBody = document.querySelector("#bloodTestTable tbody");
-        sortedRows.forEach((row) => tableBody.appendChild(row));
+        let html = "";
+        if (!triggered.length)
+          html +=
+            '<div class="alert-item good" style="margin-bottom:14px"><span class="alert-ico">✅</span><div><div class="alert-name">모든 인사이트 규칙 정상</div><div class="alert-val">50+ 의학 연결고리 분석 결과 이상 패턴 없음</div></div></div>';
+
+        triggered.forEach((r) => {
+          const relVals = r.related
+            .map((name) => {
+              const val = last.values[name];
+              if (val == null) return null;
+              const t = TESTS.find((x) => x.name === name);
+              if (!t) return null;
+              const ev = db.customEvals[name] || {};
+              const mn = ev.min != null ? ev.min : t.min;
+              const mx = ev.max != null ? ev.max : t.max;
+              return {
+                name,
+                val,
+                abn: val < mn || val > mx,
+                status: val < mn ? "low" : val > mx ? "high" : "normal",
+              };
+            })
+            .filter(Boolean);
+
+          html += `<div class="insight-card">
+      <div class="insight-header">
+        <span class="insight-badge ${r.severity === "critical" ? "critical" : r.severity === "warning" ? "warning" : "normal"}">${r.severity === "critical" ? "⚠ 긴급" : r.severity === "warning" ? "💡 주의" : "ℹ 정보"}</span>
+        <span class="insight-title">${r.title}</span>
+        <span style="margin-left:auto;font-size:.68rem;color:var(--sub)">${r.tags.map((t) => "#" + t).join(" ")}</span>
+      </div>
+      <div class="insight-body">${r.body}</div>
+      ${relVals.length ? `<div class="insight-markers">${relVals.map((x) => `<span class="im${x.abn ? " abn" : ""}">${x.name}: ${x.val} ${x.abn ? "⚠" : ""}</span>`).join("")}</div>` : ""}
+      <div style="margin-top:8px;background:var(--grn-pale);border-radius:7px;padding:8px 10px;font-size:.76rem;color:#7ee787">
+        💊 <strong>정상화 전략:</strong> ${r.strategy}
+      </div>
+    </div>`;
+        });
+
+        // Trend analysis
+        if (db.records.length >= 2) {
+          html += `<div class="card" style="margin-top:6px"><div class="card-title">📈 개선 속도 평가</div>`;
+          const speedItems = [];
+          TESTS.forEach((t) => {
+            const vals = db.records
+              .map((r) => r.values[t.name])
+              .filter((v) => v != null);
+            if (vals.length < 2) return;
+            const ev = db.customEvals[t.name] || {};
+            const mn = ev.min != null ? ev.min : t.min;
+            const mx = ev.max != null ? ev.max : t.max;
+            const first = vals[0],
+              last2 = vals[vals.length - 1];
+            const wasAbn = first < mn || first > mx;
+            if (!wasAbn) return;
+            const isNow = last2 < mn || last2 > mx;
+            const change = (((last2 - first) / Math.abs(first)) * 100).toFixed(
+              1,
+            );
+            speedItems.push({
+              name: t.name,
+              unit: t.unit,
+              first,
+              last2,
+              change,
+              wasAbn,
+              isNow,
+            });
+          });
+          if (speedItems.length) {
+            html += speedItems
+              .map((s) => {
+                const improving =
+                  s.isNow &&
+                  (s.first < TESTS.find((x) => x.name === s.name)?.min
+                    ? s.last2 > s.first
+                    : s.last2 < s.first);
+                const color = !s.isNow
+                  ? "var(--grn)"
+                  : improving
+                    ? "var(--blu)"
+                    : "var(--red)";
+                return `<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--bdr)">
+          <span style="flex:1;font-weight:700;font-size:.82rem">${s.name}</span>
+          <span style="font-family:'DM Mono',monospace;font-size:.78rem;color:var(--sub)">${s.first}→${s.last2} ${s.unit}</span>
+          <span style="font-weight:800;color:${color};font-size:.78rem">${parseFloat(s.change) > 0 ? "+" : ""}${s.change}%</span>
+          <span style="font-size:.72rem;color:${color}">${!s.isNow ? "✅ 정상화됨" : improving ? "📈 개선 중" : "📉 악화 중"}</span>
+        </div>`;
+              })
+              .join("");
+          } else {
+            html +=
+              '<div style="font-size:.78rem;color:var(--sub2)">추적 중인 비정상 수치 없음</div>';
+          }
+          html += "</div>";
+        }
+        container.innerHTML = html;
       }
 
-      window.onload = filterTests;
+      // ══════════════════════════════════════════════════════════════
+      //  STRATEGY
+      // ══════════════════════════════════════════════════════════════
+      function renderStrategy() {
+        const container = document.getElementById("strategy-container");
+        if (!container) return;
+        const last = db.records.length
+          ? db.records[db.records.length - 1]
+          : null;
+
+        // Determine which strategies are relevant
+        const relevantCats = new Set();
+        if (last) {
+          const v = (name) => last.values[name] || 0;
+          INSIGHT_RULES.forEach((r) => {
+            try {
+              if (r.cond(v)) r.tags.forEach((t) => relevantCats.add(t));
+            } catch (e) {}
+          });
+          const abnItems = getAbnItems(last);
+          abnItems.forEach((a) => {
+            const t = TESTS.find((x) => x.name === a.name);
+            if (t) relevantCats.add(t.cat);
+          });
+        }
+
+        let html = "";
+        // Show relevant first
+        const orderedCats = [
+          ...relevantCats,
+          ...Object.keys(STRATEGIES).filter((k) => !relevantCats.has(k)),
+        ];
+
+        orderedCats.forEach((cat) => {
+          const s = STRATEGIES[cat];
+          if (!s) return;
+          const isRelevant = relevantCats.has(cat);
+          html += `<div class="strat-card" style="${isRelevant ? "border-color:rgba(88,166,255,.4);" : ""}">
+      <div class="strat-hdr" onclick="toggleStrat(this)">
+        <div class="strat-title">
+          ${s.icon} ${s.title}
+          ${isRelevant ? '<span class="sbadge warn">현재 해당됨</span>' : ""}
+        </div>
+        <span class="strat-toggle">▼</span>
+      </div>
+      <div class="strat-body-wrap">
+        <div class="strat-body">${s.body}</div>
+        <div class="strat-section">
+          <div class="strat-section-title">✅ 권장 식품</div>
+          <div class="food-grid">${s.foods_good.map((f) => `<div class="food-good"><div class="food-item-title">${f.n}</div><div class="food-item-desc">${f.d}</div></div>`).join("")}</div>
+        </div>
+        <div class="strat-section">
+          <div class="strat-section-title">❌ 제한 식품</div>
+          <div class="food-grid">${s.foods_bad.map((f) => `<div class="food-bad"><div class="food-item-title">${f.n}</div><div class="food-item-desc">${f.d}</div></div>`).join("")}</div>
+        </div>
+        <div class="strat-section">
+          <div class="strat-section-title">🏃 운동 전략</div>
+          <div class="strat-body">${s.exercise}</div>
+        </div>
+        <div class="strat-section">
+          <div class="strat-section-title">🌿 생활습관</div>
+          <div class="strat-body">${s.lifestyle}</div>
+        </div>
+      </div>
+    </div>`;
+        });
+        container.innerHTML = html;
+      }
+
+      function toggleStrat(hdr) {
+        const body = hdr.nextElementSibling;
+        const arrow = hdr.querySelector(".strat-toggle");
+        body.style.display = body.style.display === "none" ? "" : "none";
+        arrow.textContent = body.style.display === "none" ? "▶" : "▼";
+      }
+
+      // ══════════════════════════════════════════════════════════════
+      //  EVAL EDITOR
+      // ══════════════════════════════════════════════════════════════
+      function renderEvalEditor() {
+        const el = document.getElementById("eval-editor-list");
+        if (!el) return;
+        const groups = {};
+        TESTS.forEach((t) => {
+          if (!groups[t.grp]) groups[t.grp] = [];
+          groups[t.grp].push(t);
+        });
+
+        el.innerHTML = Object.entries(groups)
+          .map(
+            ([grp, tests]) => `
+    <div class="group-hdr" onclick="toggleGroup('eg-${grp}')" style="margin-bottom:8px">${grp}<span>▼</span></div>
+    <div id="eg-${grp}">
+    ${tests
+      .map((t) => {
+        const ev = db.customEvals[t.name] || {};
+        return `<div class="eval-editor">
+        <div class="eval-editor-hdr">
+          <span>${t.name} <span style="font-size:.68rem;color:var(--sub);font-family:'DM Mono',monospace">${t.unit}</span></span>
+          <button class="btn btn-ghost" style="font-size:.68rem;padding:4px 8px" onclick="resetEval('${t.name}')">기본값 복원</button>
+        </div>
+        <div class="grid4" style="margin-bottom:8px">
+          <div class="fg"><label>최소값</label><input type="number" step="0.01" id="ev-min-${t.name.replace(/[^a-zA-Z0-9]/g, "_")}" value="${ev.min != null ? ev.min : t.min}" placeholder="${t.min}"/></div>
+          <div class="fg"><label>최대값</label><input type="number" step="0.01" id="ev-max-${t.name.replace(/[^a-zA-Z0-9]/g, "_")}" value="${ev.max != null ? ev.max : t.max}" placeholder="${t.max}"/></div>
+          <div class="fg grid-col-2"><label>단위</label><input type="text" value="${t.unit}" readonly style="opacity:.5;cursor:not-allowed"/></div>
+        </div>
+        <div class="fg"><label>높음 위험 요인 (편집 가능)</label>
+          <textarea id="ev-hi-${t.name.replace(/[^a-zA-Z0-9]/g, "_")}" rows="2">${ev.highRisk != null ? ev.highRisk : t.highRisk}</textarea>
+        </div>
+        <div class="fg"><label>낮음 위험 요인 (편집 가능)</label>
+          <textarea id="ev-lo-${t.name.replace(/[^a-zA-Z0-9]/g, "_")}" rows="2">${ev.lowRisk != null ? ev.lowRisk : t.lowRisk}</textarea>
+        </div>
+        <button class="btn btn-ghost" style="font-size:.72rem;padding:5px 10px;margin-top:4px" onclick="saveEval('${t.name}')">💾 이 항목 저장</button>
+      </div>`;
+      })
+      .join("")}
+    </div>`,
+          )
+          .join("");
+      }
+
+      function saveEval(name) {
+        const id = name.replace(/[^a-zA-Z0-9]/g, "_");
+        const min = parseFloat(document.getElementById("ev-min-" + id)?.value);
+        const max = parseFloat(document.getElementById("ev-max-" + id)?.value);
+        const hi = document.getElementById("ev-hi-" + id)?.value;
+        const lo = document.getElementById("ev-lo-" + id)?.value;
+        db.customEvals[name] = {
+          min: isNaN(min) ? null : min,
+          max: isNaN(max) ? null : max,
+          highRisk: hi,
+          lowRisk: lo,
+        };
+        persist();
+        alert(`"${name}" 저장됨`);
+      }
+      function resetEval(name) {
+        delete db.customEvals[name];
+        persist();
+        renderEvalEditor();
+        alert("기본값으로 복원됨");
+      }
+
+      // ══════════════════════════════════════════════════════════════
+      //  IMPORT / EXPORT
+      // ══════════════════════════════════════════════════════════════
+      function exportData() {
+        const blob = new Blob([JSON.stringify(db, null, 2)], {
+          type: "application/json",
+        });
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = `혈액검사_${new Date().toISOString().split("T")[0]}.json`;
+        a.click();
+      }
+      function importData(e) {
+        const r = new FileReader();
+        r.onload = (ev) => {
+          try {
+            db = JSON.parse(ev.target.result);
+            persist();
+            init();
+            alert("불러오기 완료!");
+          } catch (err) {
+            alert("파일 오류: " + err);
+          }
+        };
+        r.readAsText(e.target.files[0]);
+      }
+      function resetAll() {
+        if (!confirm("모든 데이터를 초기화하시겠습니까?\n⚠ 복구 불가능합니다."))
+          return;
+        db = {
+          patient: {
+            name: "",
+            birth: "",
+            gender: "남",
+            blood: "모름",
+            height: "",
+            weight: "",
+            bpS: "",
+            bpD: "",
+            fbs: "",
+            smoke: "비흡연",
+            meds: "",
+            disease: "",
+            memo: "",
+            familyHistory: [],
+          },
+          records: [],
+          customEvals: {},
+        };
+        localStorage.removeItem(KEY);
+        init();
+      }
+
+      // ══════════════════════════════════════════════════════════════
+      //  MODAL
+      // ══════════════════════════════════════════════════════════════
+      function closeModal(e) {
+        if (e.target === document.getElementById("modal-overlay"))
+          closeModalDirect();
+      }
+      function closeModalDirect() {
+        document.getElementById("modal-overlay").classList.remove("on");
+      }
+
+      window.onload = init;
     </script>
   </body>
 </html>
